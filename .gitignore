@@ -1,0 +1,19 @@
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+pubspec.lock
+build/
+
+# Android
+android/.gradle/
+android/local.properties
+android/gradle/wrapper/gradle-wrapper.jar
+android/gradlew
+android/gradlew.bat
+
+# Generated
+android/app/src/main/java/
+
+# Claude
+.claude/

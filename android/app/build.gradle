@@ -15,17 +15,13 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = '1.8'
-    }
-
-    sourceSets {
-        main.java.srcDirs += 'src/main/kotlin'
+        jvmTarget = "1.8"
     }
 
     defaultConfig {
         applicationId "com.example.tennis_logger"
-        minSdkVersion 21
-        targetSdkVersion flutter.targetSdkVersion
+        minSdk flutter.minSdkVersion
+        targetSdk flutter.targetSdkVersion
         versionCode flutter.versionCode
         versionName flutter.versionName
     }
@@ -38,5 +34,5 @@ android {
 }
 
 flutter {
-    source '../..'
+    source "../.."
 }
