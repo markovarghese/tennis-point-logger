@@ -31,40 +31,54 @@ Mobile app for rapid point-by-point tennis match data entry. Built with React Na
 
 All development commands run inside a Docker container — no local Node.js installation required.
 
+### PowerShell (Windows)
+
+**Start the dev server:**
+```powershell
+docker run --rm -it `
+  -v "${PWD}:/app" `
+  -w /app `
+  -p 8081:8081 `
+  node:20-alpine `
+  sh -c "npm install && npx expo start --tunnel"
+```
+
+**Android only (no tunnel):**
+```powershell
+docker run --rm -it `
+  -v "${PWD}:/app" `
+  -w /app `
+  -p 8081:8081 `
+  node:20-alpine `
+  sh -c "npm install && npx expo start --android"
+```
+
+**Run any npm/npx command:**
+```powershell
+docker run --rm -it `
+  -v "${PWD}:/app" `
+  -w /app `
+  node:20-alpine `
+  sh -c "npm <command>"
+```
+
+> **Tip:** Add a function to your PowerShell profile to avoid retyping the boilerplate:
+> ```powershell
+> function expo-docker { docker run --rm -it -v "${PWD}:/app" -w /app -p 8081:8081 node:20-alpine sh -c $args }
+> expo-docker "npm install && npx expo start --tunnel"
+> ```
+
+### bash / macOS / Linux
+
 **Start the dev server:**
 ```bash
 docker run --rm -it \
-  -v "$(pwd)":/app \
+  -v "$(pwd):/app" \
   -w /app \
   -p 8081:8081 \
   node:20-alpine \
   sh -c "npm install && npx expo start --tunnel"
 ```
-
-**Android only (no tunnel):**
-```bash
-docker run --rm -it \
-  -v "$(pwd)":/app \
-  -w /app \
-  -p 8081:8081 \
-  node:20-alpine \
-  sh -c "npm install && npx expo start --android"
-```
-
-**Run any npm/npx command:**
-```bash
-docker run --rm -it \
-  -v "$(pwd)":/app \
-  -w /app \
-  node:20-alpine \
-  sh -c "npm <command>"
-```
-
-> **Tip:** Add a shell alias to avoid retyping the boilerplate:
-> ```bash
-> alias expo-docker='docker run --rm -it -v "$(pwd)":/app -w /app -p 8081:8081 node:20-alpine sh -c'
-> expo-docker "npm install && npx expo start --tunnel"
-> ```
 
 ## CI/CD
 
@@ -73,9 +87,21 @@ docker run --rm -it \
 - **OTA** → `expo-updates` on every `main` push
 
 Add `EXPO_TOKEN` to your GitHub repository secrets, then configure `eas.json` with your project ID:
+
+**PowerShell:**
+```powershell
+docker run --rm -it `
+  -v "${PWD}:/app" `
+  -w /app `
+  -e EXPO_TOKEN=<your-token> `
+  node:20-alpine `
+  sh -c "npm install && npx eas init"
+```
+
+**bash:**
 ```bash
 docker run --rm -it \
-  -v "$(pwd)":/app \
+  -v "$(pwd):/app" \
   -w /app \
   -e EXPO_TOKEN=<your-token> \
   node:20-alpine \
