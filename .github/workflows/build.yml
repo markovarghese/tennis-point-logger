@@ -1,0 +1,71 @@
+name: EAS Build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Platform to build'
+        required: true
+        default: 'all'
+        type: choice
+        options: [android, ios, all]
+      profile:
+        description: 'Build profile'
+        required: true
+        default: 'preview'
+        type: choice
+        options: [development, preview, production]
+
+jobs:
+  build:
+    name: EAS Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build Android (push to main)
+        if: github.event_name == 'push'
+        run: eas build --platform android --profile preview --non-interactive
+
+      - name: Build (manual dispatch)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          PLATFORM=${{ github.event.inputs.platform }}
+          PROFILE=${{ github.event.inputs.profile }}
+          eas build --platform $PLATFORM --profile $PROFILE --non-interactive
+
+  ota-update:
+    name: EAS Update (OTA)
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Publish OTA update
+        run: eas update --auto

@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:api.anthropic.com)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "mcp__Claude_in_Chrome__navigate",
+      "Bash(gunzip -c \"/c/Users/marko/.claude/projects/C--Users-marko-source-repos-tennis-point-logger--claude-worktrees-priceless-merkle-97331c/b86e453d-d6cb-440f-a115-36dfd060a60e/tool-results/webfetch-1777876366759-kzp96i.bin\")",
+      "Read(//tmp/**)",
+      "Bash(tar -tf /tmp/design_output.tar)",
+      "Bash(tar -xf /tmp/design_output.tar -C /tmp/)"
+    ]
+  }
+}
