@@ -29,10 +29,42 @@ Mobile app for rapid point-by-point tennis match data entry. Built with React Na
 
 ## Setup
 
+All development commands run inside a Docker container — no local Node.js installation required.
+
+**Start the dev server:**
 ```bash
-npm install
-npx expo start
+docker run --rm -it \
+  -v "$(pwd)":/app \
+  -w /app \
+  -p 8081:8081 \
+  node:20-alpine \
+  sh -c "npm install && npx expo start --tunnel"
 ```
+
+**Android only (no tunnel):**
+```bash
+docker run --rm -it \
+  -v "$(pwd)":/app \
+  -w /app \
+  -p 8081:8081 \
+  node:20-alpine \
+  sh -c "npm install && npx expo start --android"
+```
+
+**Run any npm/npx command:**
+```bash
+docker run --rm -it \
+  -v "$(pwd)":/app \
+  -w /app \
+  node:20-alpine \
+  sh -c "npm <command>"
+```
+
+> **Tip:** Add a shell alias to avoid retyping the boilerplate:
+> ```bash
+> alias expo-docker='docker run --rm -it -v "$(pwd)":/app -w /app -p 8081:8081 node:20-alpine sh -c'
+> expo-docker "npm install && npx expo start --tunnel"
+> ```
 
 ## CI/CD
 
@@ -40,7 +72,15 @@ npx expo start
 - **iOS** → EAS Build → TestFlight
 - **OTA** → `expo-updates` on every `main` push
 
-Add `EXPO_TOKEN` to your GitHub repository secrets, then configure `eas.json` with your project ID from `eas init`.
+Add `EXPO_TOKEN` to your GitHub repository secrets, then configure `eas.json` with your project ID:
+```bash
+docker run --rm -it \
+  -v "$(pwd)":/app \
+  -w /app \
+  -e EXPO_TOKEN=<your-token> \
+  node:20-alpine \
+  sh -c "npm install && npx eas init"
+```
 
 ## Google Sheets Integration
 
