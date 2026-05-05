@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import '../models/match_settings.dart';
 import '../models/point.dart';
 import '../theme.dart';
 
@@ -11,8 +12,9 @@ Future<void> showExportSheet(
   BuildContext context,
   List<TennisPoint> points,
   String opponentName,
-  DateTime matchDate,
-) {
+  DateTime matchDate, {
+  required AppSettings settings,
+}) {
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -21,6 +23,7 @@ Future<void> showExportSheet(
       points: points,
       opponentName: opponentName,
       matchDate: matchDate,
+      settings: settings,
     ),
   );
 }
@@ -29,11 +32,13 @@ class _ExportSheet extends StatefulWidget {
   final List<TennisPoint> points;
   final String opponentName;
   final DateTime matchDate;
+  final AppSettings settings;
 
   const _ExportSheet({
     required this.points,
     required this.opponentName,
     required this.matchDate,
+    required this.settings,
   });
 
   @override
@@ -59,6 +64,22 @@ class _ExportSheetState extends State<_ExportSheet> {
     setState(() => _copied = true);
     await Future.delayed(const Duration(seconds: 2));
     if (mounted) setState(() => _copied = false);
+  }
+
+  Future<void> _openInSheets() async {
+    final connected = widget.settings.gsState == GsState.connected;
+    final hasDest = widget.settings.selectedSheet != null ||
+        widget.settings.selectedFolder != null;
+    final msg = !connected
+        ? 'Connect Google account in Settings first.'
+        : !hasDest
+            ? 'Choose a Google Sheets destination in Settings.'
+            : 'Syncing ${widget.points.length} rows to '
+              '${widget.settings.selectedSheet?.name ?? 'TennisLogger_${DateTime.now().year}.xlsx'}…';
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg)),
+    );
   }
 
   Future<void> _saveToDevice() async {
@@ -124,6 +145,16 @@ class _ExportSheetState extends State<_ExportSheet> {
             sub: 'Paste into any spreadsheet',
             accent: _copied,
             onTap: _copyCSV,
+          ),
+          const SizedBox(height: 8),
+          _ExportAction(
+            icon: '📊',
+            label: 'Open in Google Sheets',
+            sub: widget.settings.gsState == GsState.connected
+                ? 'Sync via Sheets API'
+                : 'Connect Google in Settings',
+            accent: false,
+            onTap: _openInSheets,
           ),
           const SizedBox(height: 8),
           _ExportAction(

@@ -134,35 +134,23 @@ class _AppShellState extends State<_AppShell> {
   }
 
   Widget _EntryWithFab() {
-    return Stack(
-      children: [
-        EntryScreen(
-          points: _points,
-          currentPoint: _currentPoint,
-          opponentName: _opponentName,
-          format: _settings.format,
-          onFieldChange: _handleFieldChange,
-          onNext: _handleNext,
-          onOpenHistory: () => setState(() => _screen = _AppScreen.history),
-          onEditPoint: _handleEditPoint,
-          scoreOverride: _scoreOverride,
-          onScoreOverride: (o) => setState(() => _scoreOverride = o),
-        ),
-        // Export FAB
-        if (_points.isNotEmpty)
-          Positioned(
-            bottom: 90 + MediaQuery.of(context).padding.bottom,
-            right: 16,
-            child: FloatingActionButton.small(
-              onPressed: () => showExportSheet(
-                context, _points, _opponentName, _matchDate),
-              backgroundColor: AppColors.secondary,
-              foregroundColor: AppColors.onPrimary,
-              tooltip: 'Export match',
-              child: const Icon(Icons.ios_share_outlined, size: 18),
-            ),
-          ),
-      ],
+    return EntryScreen(
+      points: _points,
+      currentPoint: _currentPoint,
+      opponentName: _opponentName,
+      format: _settings.format,
+      gsState: _settings.gsState,
+      onFieldChange: _handleFieldChange,
+      onNext: _handleNext,
+      onOpenHistory: () => setState(() => _screen = _AppScreen.history),
+      onBackToSetup: () => setState(() => _screen = _AppScreen.setup),
+      onExport: () => showExportSheet(
+        context, _points, _opponentName, _matchDate,
+        settings: _settings,
+      ),
+      onEditPoint: _handleEditPoint,
+      scoreOverride: _scoreOverride,
+      onScoreOverride: (o) => setState(() => _scoreOverride = o),
     );
   }
 }

@@ -1,5 +1,22 @@
 enum FinalSetType { full, tenPointTb, sixPointTb }
 
+enum GsState { disconnected, connecting, connected }
+
+enum SheetMode { create, existing }
+
+class DriveFolder {
+  final String id;
+  final String name;
+  const DriveFolder({required this.id, required this.name});
+}
+
+class DriveSheet {
+  final String id;
+  final String name;
+  final String modified;
+  const DriveSheet({required this.id, required this.name, required this.modified});
+}
+
 class MatchFormat {
   final int setsInMatch;
   final int gamesPerSet;
@@ -83,6 +100,14 @@ class AppSettings {
   final bool syncOnMatchEnd;
   final bool keepOfflineCopy;
 
+  // Google Sheets sync state
+  final GsState gsState;
+  final String? gsAccount;
+  final SheetMode sheetMode;
+  final DriveFolder? selectedFolder;
+  final DriveSheet? selectedSheet;
+  final String? sheetsId;
+
   const AppSettings({
     this.playerName = 'Me',
     this.formatPreset = 'l7_short',
@@ -90,6 +115,12 @@ class AppSettings {
     this.autoSyncAfterPoint = true,
     this.syncOnMatchEnd = false,
     this.keepOfflineCopy = true,
+    this.gsState = GsState.disconnected,
+    this.gsAccount,
+    this.sheetMode = SheetMode.create,
+    this.selectedFolder,
+    this.selectedSheet,
+    this.sheetsId,
   });
 
   AppSettings copyWith({
@@ -99,6 +130,16 @@ class AppSettings {
     bool? autoSyncAfterPoint,
     bool? syncOnMatchEnd,
     bool? keepOfflineCopy,
+    GsState? gsState,
+    String? gsAccount,
+    bool clearGsAccount = false,
+    SheetMode? sheetMode,
+    DriveFolder? selectedFolder,
+    bool clearSelectedFolder = false,
+    DriveSheet? selectedSheet,
+    bool clearSelectedSheet = false,
+    String? sheetsId,
+    bool clearSheetsId = false,
   }) => AppSettings(
     playerName: playerName ?? this.playerName,
     formatPreset: formatPreset ?? this.formatPreset,
@@ -106,5 +147,11 @@ class AppSettings {
     autoSyncAfterPoint: autoSyncAfterPoint ?? this.autoSyncAfterPoint,
     syncOnMatchEnd: syncOnMatchEnd ?? this.syncOnMatchEnd,
     keepOfflineCopy: keepOfflineCopy ?? this.keepOfflineCopy,
+    gsState: gsState ?? this.gsState,
+    gsAccount: clearGsAccount ? null : (gsAccount ?? this.gsAccount),
+    sheetMode: sheetMode ?? this.sheetMode,
+    selectedFolder: clearSelectedFolder ? null : (selectedFolder ?? this.selectedFolder),
+    selectedSheet: clearSelectedSheet ? null : (selectedSheet ?? this.selectedSheet),
+    sheetsId: clearSheetsId ? null : (sheetsId ?? this.sheetsId),
   );
 }

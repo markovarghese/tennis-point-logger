@@ -12,9 +12,12 @@ class EntryScreen extends StatefulWidget {
   final TennisPoint currentPoint;
   final String opponentName;
   final MatchFormat format;
+  final GsState gsState;
   final void Function(String key, bool? value) onFieldChange;
   final VoidCallback onNext;
   final VoidCallback onOpenHistory;
+  final VoidCallback onBackToSetup;
+  final VoidCallback onExport;
   final void Function(TennisPoint edited) onEditPoint;
   final ScoreOverride? scoreOverride;
   final void Function(ScoreOverride?) onScoreOverride;
@@ -25,9 +28,12 @@ class EntryScreen extends StatefulWidget {
     required this.currentPoint,
     required this.opponentName,
     required this.format,
+    required this.gsState,
     required this.onFieldChange,
     required this.onNext,
     required this.onOpenHistory,
+    required this.onBackToSetup,
+    required this.onExport,
     required this.onEditPoint,
     required this.scoreOverride,
     required this.onScoreOverride,
@@ -93,8 +99,60 @@ class _EntryScreenState extends State<EntryScreen> {
         ? 'New · #${total + 1}'
         : 'Point #${_viewIdx! + 1} of $total';
 
+    final synced = widget.gsState == GsState.connected;
+
     return Column(
       children: [
+        // Top strip: ◀ Setup | sync dot | Export ↑
+        Container(
+          color: AppColors.surface,
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+          child: Row(
+            children: [
+              TextButton(
+                onPressed: widget.onBackToSetup,
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.onSurfaceVar,
+                  padding: const EdgeInsets.all(6),
+                  minimumSize: const Size(0, 0),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text('◀ Setup',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+              ),
+              const Spacer(),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 8, height: 8,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: synced ? const Color(0xFF34A853) : AppColors.outline,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(synced ? 'Synced' : 'No sync',
+                    style: const TextStyle(fontSize: 11, color: AppColors.onSurfaceVar)),
+                ],
+              ),
+              const Spacer(),
+              TextButton(
+                onPressed: widget.points.isEmpty ? null : widget.onExport,
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  disabledForegroundColor: AppColors.outlineVariant,
+                  padding: const EdgeInsets.all(6),
+                  minimumSize: const Size(0, 0),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text('Export ↑',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+        ),
+
         // Score banner
         ScoreBanner(
           score: _score,
