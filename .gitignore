@@ -1,0 +1,3 @@
+# Claude Code — per-user, per-machine settings and scratch worktrees
+.claude/settings.local.json
+.claude/worktrees/
