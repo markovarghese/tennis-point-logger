@@ -1,4 +1,4 @@
-package com.example.tennis_logger
+package com.markovarghese.tennispointlogger
 
 import io.flutter.embedding.android.FlutterActivity
 

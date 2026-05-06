@@ -18,3 +18,27 @@ android/gradlew.bat
 
 # Generated
 android/app/src/main/java/
+
+# JetBrains/IntelliJ
+.idea/
+!.idea/vcs.xml
+!.idea/runConfigurations/
+!.idea/codeStyles/
+!.idea/inspectionProfiles/
+
+# Ignore user-specific/churn files even if the folder is tracked
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/usage.statistics.xml
+.idea/dictionaries
+.idea/shelf
+.idea/caches/
+.idea/studiobot.xml
+.idea/planningMode.xml
+.idea/deviceManager.xml
+.idea/markdown.xml
+
+# Ignore generated files (Redundant for Flutter/Gradle projects)
+*.iml
+.idea/modules.xml
+.idea/libraries/

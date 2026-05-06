@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace "com.example.tennis_logger"
+    namespace "com.markovarghese.tennispointlogger"
     compileSdk flutter.compileSdkVersion
     ndkVersion flutter.ndkVersion
 
@@ -19,7 +19,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.example.tennis_logger"
+        applicationId "com.markovarghese.tennispointlogger"
         minSdk flutter.minSdkVersion
         targetSdk flutter.targetSdkVersion
         versionCode flutter.versionCode
