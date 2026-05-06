@@ -140,7 +140,33 @@ Before publishing to Google Play, you need to **sign** the build:
 
 ### CI builds
 
-`.github/workflows/build.yml` runs `flutter analyze`, `flutter test`, and `flutter build apk --release` on every push, uploading the APK as a workflow artifact.
+`.github/workflows/build.yml` runs `flutter analyze` and `flutter test` on every push to `main` and on pull requests. An optional iOS build can be triggered manually from the Actions tab.
+
+## Releases
+
+Releases are published automatically when a version tag is pushed. The release workflow builds the APK, attaches it to a GitHub Release, and generates release notes from commits since the previous tag.
+
+### Publishing a release
+
+1. Bump the version in `pubspec.yaml` — the version before the `+` is the public version, the number after is the build number:
+   ```yaml
+   version: 1.1.0+2
+   ```
+2. Commit and push to `main`:
+   ```bash
+   git add pubspec.yaml
+   git commit -m "chore: bump version to 1.1.0"
+   git push origin main
+   ```
+3. Tag the commit and push the tag:
+   ```bash
+   git tag v1.1.0
+   git push origin v1.1.0
+   ```
+
+The tag must match the version in `pubspec.yaml` (e.g. tag `v1.1.0` → `version: 1.1.0+N`). The workflow enforces this and will fail early if they don't match.
+
+The published APK appears under [Releases](https://github.com/markovarghese/tennis-point-logger/releases) and can be sideloaded directly onto an Android device.
 
 ## Deploying to iPhone
 
