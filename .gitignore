@@ -15,6 +15,7 @@ android/local.properties
 android/gradle/wrapper/gradle-wrapper.jar
 android/gradlew
 android/gradlew.bat
+android/app/google-services.json
 
 # Generated
 android/app/src/main/java/
