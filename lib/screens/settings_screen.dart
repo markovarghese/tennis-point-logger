@@ -867,7 +867,7 @@ class _SyncRow extends StatelessWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: AppColors.onPrimary,
+            activeThumbColor: AppColors.onPrimary,
             activeTrackColor: AppColors.primary,
             inactiveThumbColor: AppColors.outline,
             inactiveTrackColor: AppColors.surfaceVariant,

@@ -1,3 +1,7 @@
+# Claude Code — per-user, per-machine settings and scratch worktrees
+.claude/settings.local.json
+.claude/worktrees/
+
 # Flutter/Dart
 .dart_tool/
 .flutter-plugins
@@ -14,6 +18,3 @@ android/gradlew.bat
 
 # Generated
 android/app/src/main/java/
-
-# Claude
-.claude/
