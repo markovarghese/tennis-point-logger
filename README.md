@@ -28,8 +28,6 @@ For every point, you tap one chip per question (Yes / No / unknown):
 - **Export** — copy as CSV, save to device, or sync to Google Sheets (see below)
 - **Google Sheets sync** — sign in with Google, pick a Drive folder for a new spreadsheet *or* an existing sheet, and choose your sync cadence (after every point, on match end, or offline-only)
 
-> **Note on Google sync:** the OAuth flow and Sheets API calls are currently UI-complete but stubbed — the connect button transitions through the connected state with a placeholder account, and the picker uses sample folders/sheets. Wiring real Google OAuth + Sheets API v4 requires Google Cloud Console credentials and platform-specific config (see [Google sync setup](#google-sync-setup-optional) below).
-
 ## Project layout
 
 ```
@@ -197,17 +195,62 @@ flutter run -d "iPhone 15"     # or whatever device shows in `flutter devices`
 
 Apple's full guide: <https://docs.flutter.dev/deployment/ios>.
 
-## Google sync setup (optional)
+## Google sync setup
 
-The current build has the sync UI in place but the OAuth/Sheets calls are stubbed. To wire them up for real you'll need:
+Google Sign-In and Sheets sync are fully implemented in the code. Before they will work you need to register the app in **Google Cloud Console** and create OAuth credentials. Do this once per development environment (the debug SHA-1 is machine-specific).
 
-1. A **Google Cloud Console** project with the **Google Sheets API** and **Google Drive API** enabled.
-2. **OAuth 2.0 client IDs** for Android (requires the app's package name + the SHA-1 of your signing keystore) and iOS (requires the bundle identifier).
-3. Add the [`google_sign_in`](https://pub.dev/packages/google_sign_in) and [`googleapis`](https://pub.dev/packages/googleapis) Flutter packages to `pubspec.yaml`.
-4. Drop the platform config files into `android/app/google-services.json` and `ios/Runner/GoogleService-Info.plist`.
-5. Replace the stubs in `lib/screens/settings_screen.dart` (`_connectGoogle`) and `lib/widgets/export_sheet.dart` (`_openInSheets`) with real calls.
+### 1. Create a Google Cloud project
 
-OAuth scopes needed: `drive.file` and `spreadsheets`.
+1. Go to [console.cloud.google.com](https://console.cloud.google.com) → **New Project** → name it (e.g. `tennis-point-logger`) → **Create**.
+2. With the project selected, go to **APIs & Services → Library** and enable:
+   - **Google Drive API**
+   - **Google Sheets API**
+
+### 2. Configure the OAuth consent screen
+
+1. Go to **APIs & Services → OAuth consent screen** (new UI: **Google Auth Platform → Overview**).
+2. Click **Get started** (or **Create**), choose **External**, fill in an app name and your email, and complete the wizard.
+3. Under **Test users**, add every Gmail address you want to test with while the app is in development.
+
+### 3. Get your debug SHA-1
+
+```bash
+keytool -list -v \
+  -keystore ~/.android/debug.keystore \
+  -alias androiddebugkey \
+  -storepass android -keypass android
+```
+
+Copy the `SHA1:` value. You'll need a new one for each machine you develop on, and a different one for a release keystore when publishing.
+
+### 4. Create OAuth client IDs
+
+Go to **APIs & Services → Credentials** (new UI: **Google Auth Platform → Clients**) → **+ Create Client**.
+
+**Android client** (required to trust the installed app):
+- Application type: **Android**
+- Package name: `com.markovarghese.tennispointlogger`
+- SHA-1: paste the value from step 3
+- → **Create**
+
+**Web client** (used by the Flutter SDK to obtain ID tokens):
+- Application type: **Web application**
+- → **Create**
+- Copy the **Client ID** — it ends in `.apps.googleusercontent.com`
+
+### 5. Set the Web client ID in the code
+
+Open [`lib/services/google_auth_service.dart`](lib/services/google_auth_service.dart) and replace the `_webClientId` constant with your Web client ID:
+
+```dart
+static const _webClientId = '<YOUR_WEB_CLIENT_ID>.apps.googleusercontent.com';
+```
+
+### Notes
+
+- No `google-services.json` is required for this setup — the `google_sign_in` Flutter package uses the Web client ID directly.
+- For a **release build** (Play Store), repeat step 3 with your upload/release keystore and create a second Android OAuth client for that SHA-1.
+- iOS support requires a separate iOS OAuth client (bundle ID only, no SHA-1) and a `GoogleService-Info.plist` — see the [google_sign_in iOS setup guide](https://pub.dev/packages/google_sign_in#ios-integration).
 
 ## License
 

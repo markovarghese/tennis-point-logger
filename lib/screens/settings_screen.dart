@@ -1,20 +1,7 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/match_settings.dart';
+import '../services/google_auth_service.dart';
 import '../theme.dart';
-
-const _mockFolders = [
-  DriveFolder(id: 'f1', name: 'Tennis'),
-  DriveFolder(id: 'f2', name: 'Sports Data'),
-  DriveFolder(id: 'f3', name: 'My Drive (root)'),
-  DriveFolder(id: 'f4', name: 'Training 2026'),
-];
-
-const _mockSheets = [
-  DriveSheet(id: 's1', name: 'TennisAnalysis.xlsx', modified: '2 May 2026'),
-  DriveSheet(id: 's2', name: 'Match Log 2025', modified: '12 Jan 2026'),
-  DriveSheet(id: 's3', name: 'Training Stats', modified: '30 Apr 2026'),
-];
 
 class SettingsScreen extends StatefulWidget {
   final AppSettings settings;
@@ -29,7 +16,6 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   late AppSettings _s;
   late TextEditingController _nameCtrl;
-  Timer? _connectingTimer;
 
   @override
   void initState() {
@@ -41,7 +27,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void dispose() {
     _nameCtrl.dispose();
-    _connectingTimer?.cancel();
     super.dispose();
   }
 
@@ -56,20 +41,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _update(_s.copyWith(formatPreset: id, format: fmt));
   }
 
-  void _connectGoogle() {
+  Future<void> _connectGoogle() async {
     _update(_s.copyWith(gsState: GsState.connecting));
-    _connectingTimer?.cancel();
-    _connectingTimer = Timer(const Duration(milliseconds: 1200), () {
+    try {
+      final email = await GoogleAuthService.instance.signIn();
       if (!mounted) return;
-      _update(_s.copyWith(
-        gsState: GsState.connected,
-        gsAccount: 'you@gmail.com',
-      ));
-    });
+      if (email != null) {
+        _update(_s.copyWith(gsState: GsState.connected, gsAccount: email));
+      } else {
+        _update(_s.copyWith(gsState: GsState.disconnected));
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _update(_s.copyWith(gsState: GsState.disconnected));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Sign-in failed: $e')),
+      );
+    }
   }
 
-  void _disconnectGoogle() {
-    _connectingTimer?.cancel();
+  Future<void> _disconnectGoogle() async {
+    await GoogleAuthService.instance.signOut();
+    if (!mounted) return;
     _update(_s.copyWith(
       gsState: GsState.disconnected,
       clearGsAccount: true,
@@ -80,14 +73,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _pickFolder() async {
+    List<DriveFolder> folders;
+    try {
+      folders = await GoogleAuthService.instance.listFolders();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not load folders: $e')),
+      );
+      return;
+    }
+    if (!mounted) return;
     final result = await showModalBottomSheet<DriveFolder>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const _PickerModal<DriveFolder>(
+      builder: (_) => _PickerModal<DriveFolder>(
         title: 'Choose Folder',
         subtitle: 'Google Drive',
-        items: _mockFolders,
+        items: folders,
         isFolder: true,
       ),
     );
@@ -97,22 +101,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _pickSheet() async {
+    List<DriveSheet> driveSheets;
+    try {
+      driveSheets = await GoogleAuthService.instance.listSheets();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not load spreadsheets: $e')),
+      );
+      return;
+    }
+    if (!mounted) return;
     final result = await showModalBottomSheet<DriveSheet>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const _PickerModal<DriveSheet>(
+      builder: (_) => _PickerModal<DriveSheet>(
         title: 'Choose Spreadsheet',
         subtitle: 'Google Drive',
-        items: _mockSheets,
+        items: driveSheets,
         isFolder: false,
       ),
     );
     if (result != null) {
-      _update(_s.copyWith(
-        selectedSheet: result,
-        sheetsId: result.id,
-      ));
+      _update(_s.copyWith(selectedSheet: result, sheetsId: result.id));
     }
   }
 

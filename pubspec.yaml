@@ -14,6 +14,9 @@ dependencies:
   csv: ^6.0.0
   share_plus: ^10.0.0
   path_provider: ^2.1.0
+  google_sign_in: ^6.2.1
+  googleapis: ^13.1.0
+  extension_google_sign_in_as_googleapis_auth: ^2.0.12
 
 dev_dependencies:
   flutter_test:
