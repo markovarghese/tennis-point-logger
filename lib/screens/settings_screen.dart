@@ -16,18 +16,38 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   late AppSettings _s;
   late TextEditingController _nameCtrl;
+  bool _templateEditing = false;
+  late TextEditingController _templateCtrl;
 
   @override
   void initState() {
     super.initState();
     _s = widget.settings;
     _nameCtrl = TextEditingController(text: _s.playerName);
+    _templateCtrl = TextEditingController(text: _s.templateUrl);
   }
 
   @override
   void dispose() {
     _nameCtrl.dispose();
+    _templateCtrl.dispose();
     super.dispose();
+  }
+
+  // Returns the spreadsheet ID extracted from a Google Sheets URL, or null.
+  String? _parseSheetId(String url) {
+    final m = RegExp(r'spreadsheets/d/([a-zA-Z0-9_-]+)').firstMatch(url);
+    return m?.group(1);
+  }
+
+  ({String name, String shortId})? _templateInfo(String url) {
+    final id = _parseSheetId(url);
+    if (id == null) return null;
+    final isDefault = id == _parseSheetId(AppSettings.defaultTemplateUrl);
+    return (
+      name: isDefault ? 'TennisAnalysis (default)' : 'Custom template',
+      shortId: '${id.substring(0, id.length.clamp(0, 8))}…',
+    );
   }
 
   void _update(AppSettings updated) {
@@ -201,6 +221,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           if (_s.gsState == GsState.connected) ...[
             const _SectionTitle('Google Sheets Destination'),
             _buildSheetsDestinationSection(),
+            const _SectionTitle('Sheet Template'),
+            _buildSheetTemplateSection(),
             const _SectionTitle('Sync Behaviour'),
             _SyncRow(
               label: 'Auto-sync after each point',
@@ -417,6 +439,222 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildSheetTemplateSection() {
+    final info = _templateInfo(_s.templateUrl);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: AppColors.outlineVariant)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'When you create a new sheet, the app copies this template, then clears the '
+            'LoggerData table — keeping the Logger tab structure, pivot tables and charts intact.',
+            style: TextStyle(fontSize: 13, color: AppColors.onSurfaceVar, height: 1.5),
+          ),
+          const SizedBox(height: 12),
+
+          if (!_templateEditing && info != null) ...[
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                border: Border.all(color: AppColors.outlineVariant),
+                borderRadius: BorderRadius.circular(12),
+                color: AppColors.surface,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('📋', style: TextStyle(fontSize: 22)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(info.name,
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600,
+                            color: AppColors.onSurface)),
+                        Text('id: ${info.shortId}',
+                          style: const TextStyle(fontSize: 11, color: AppColors.onSurfaceVar,
+                            fontFamily: 'monospace')),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 6,
+                          children: const [
+                            _Pill('Logger tab ✓'),
+                            _Pill('LoggerData ✓'),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () => setState(() {
+                      _templateCtrl.text = _s.templateUrl;
+                      _templateEditing = true;
+                    }),
+                    style: TextButton.styleFrom(
+                      backgroundColor: AppColors.surfaceVariant,
+                      foregroundColor: AppColors.onSurface,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      minimumSize: const Size(0, 32),
+                      shape: const StadiumBorder(),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text('Change',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          if (!_templateEditing && info == null) ...[
+            GestureDetector(
+              onTap: () => setState(() {
+                _templateCtrl.text = '';
+                _templateEditing = true;
+              }),
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 56),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.outlineVariant, width: 1.5,
+                    style: BorderStyle.solid,
+                  ),
+                ),
+                child: Row(
+                  children: const [
+                    Text('📋', style: TextStyle(fontSize: 22)),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Set template sheet',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600,
+                              color: AppColors.onSurfaceVar)),
+                          Text('Paste a Google Sheets URL',
+                            style: TextStyle(fontSize: 12, color: AppColors.outline)),
+                        ],
+                      ),
+                    ),
+                    Text('›', style: TextStyle(fontSize: 18, color: AppColors.outline)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+
+          if (_templateEditing) ...[
+            const Text('Google Sheets URL',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
+                color: AppColors.onSurfaceVar)),
+            const SizedBox(height: 6),
+            TextField(
+              controller: _templateCtrl,
+              autofocus: true,
+              style: const TextStyle(fontSize: 15, color: AppColors.onSurface),
+              decoration: InputDecoration(
+                hintText: 'https://docs.google.com/spreadsheets/d/…',
+                hintStyle: const TextStyle(color: AppColors.outline),
+                filled: true,
+                fillColor: AppColors.surface,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.outlineVariant),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.outlineVariant),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                ),
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.tertiaryContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                'The template must contain a Logger tab with a LoggerData table (cols A–I). '
+                'Pivot tables, charts and formulas in cols J–O are preserved on copy.',
+                style: TextStyle(fontSize: 11, color: AppColors.onSurface, height: 1.5),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => setState(() => _templateEditing = false),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.outlineVariant),
+                      foregroundColor: AppColors.onSurface,
+                      shape: const StadiumBorder(),
+                      minimumSize: const Size(0, 40),
+                    ),
+                    child: const Text('Cancel', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      _templateCtrl.text = AppSettings.defaultTemplateUrl;
+                      _update(_s.copyWith(templateUrl: AppSettings.defaultTemplateUrl));
+                      setState(() => _templateEditing = false);
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.outlineVariant),
+                      foregroundColor: AppColors.onSurfaceVar,
+                      shape: const StadiumBorder(),
+                      minimumSize: const Size(0, 40),
+                    ),
+                    child: const Text('Reset', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: _parseSheetId(_templateCtrl.text) != null
+                        ? () {
+                            _update(_s.copyWith(templateUrl: _templateCtrl.text));
+                            setState(() => _templateEditing = false);
+                          }
+                        : null,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      disabledBackgroundColor: AppColors.outlineVariant,
+                      foregroundColor: AppColors.onPrimary,
+                      disabledForegroundColor: AppColors.onSurfaceVar,
+                      shape: const StadiumBorder(),
+                      minimumSize: const Size(0, 40),
+                    ),
+                    child: const Text('Save', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildGoogleAccountSection() {
     switch (_s.gsState) {
       case GsState.disconnected:
@@ -622,12 +860,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
             text: TextSpan(
               style: const TextStyle(fontSize: 13, color: AppColors.onSurfaceVar, height: 1.5),
               children: [
-                const TextSpan(text: 'Choose a Google Drive folder. The app will create a new spreadsheet named '),
-                TextSpan(
-                  text: 'TennisLogger_$year.xlsx',
-                  style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.onSurface),
+                const TextSpan(text: 'Pick a Drive folder. The app will '),
+                const TextSpan(
+                  text: 'copy your template sheet',
+                  style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.onSurface),
                 ),
-                const TextSpan(text: ' there.'),
+                TextSpan(text: ' there as TennisLogger_$year.xlsx, then clear the '),
+                const TextSpan(
+                  text: 'LoggerData',
+                  style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.onSurface),
+                ),
+                const TextSpan(text: ' table so you start fresh — pivot tables, charts and formulas in the '),
+                const TextSpan(
+                  text: 'Logger',
+                  style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.onSurface),
+                ),
+                const TextSpan(text: ' tab are preserved.'),
               ],
             ),
           ),
@@ -659,7 +907,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           style: const TextStyle(
                             fontSize: 13, fontWeight: FontWeight.w600,
                             color: AppColors.onSecondaryContainer)),
-                        Text('Will be created in ${folder.name}',
+                        Text('Copy of template → ${folder.name}, LoggerData empty',
                           style: const TextStyle(fontSize: 11, color: AppColors.onSurfaceVar)),
                       ],
                     ),
@@ -692,12 +940,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             text: const TextSpan(
               style: TextStyle(fontSize: 13, color: AppColors.onSurfaceVar, height: 1.5),
               children: [
-                TextSpan(text: 'Pick an existing Google Sheet. Data will be appended to the '),
+                TextSpan(text: 'Pick an existing Google Sheet. Rows are appended to the '),
                 TextSpan(
-                  text: 'logger',
+                  text: 'LoggerData',
                   style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.onSurface),
                 ),
-                TextSpan(text: ' tab, columns A–I.'),
+                TextSpan(text: ' table on the '),
+                TextSpan(
+                  text: 'Logger',
+                  style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.onSurface),
+                ),
+                TextSpan(text: ' tab — make sure the sheet has both, or copy from your template first.'),
               ],
             ),
           ),
@@ -732,7 +985,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           style: const TextStyle(
                             fontSize: 13, fontWeight: FontWeight.w600,
                             color: AppColors.onSecondaryContainer)),
-                        const Text('Appending to "logger" tab, cols A–I',
+                        const Text('Appending to LoggerData table on Logger tab',
                           style: TextStyle(fontSize: 11, color: AppColors.onSurfaceVar)),
                       ],
                     ),
@@ -983,6 +1236,27 @@ class _GoogleLogo extends StatelessWidget {
           height: 1,
         ),
       ),
+    );
+  }
+}
+
+class _Pill extends StatelessWidget {
+  final String text;
+  const _Pill(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: AppColors.primaryContainer,
+        borderRadius: BorderRadius.circular(100),
+      ),
+      child: Text(text,
+        style: const TextStyle(
+          fontSize: 10, fontWeight: FontWeight.w700,
+          color: AppColors.onPrimaryContainer, letterSpacing: 0.3,
+        )),
     );
   }
 }

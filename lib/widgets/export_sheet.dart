@@ -52,8 +52,8 @@ class _ExportSheetState extends State<_ExportSheet> {
 
   String get _csv {
     final dateStr = DateFormat('dd MMM yyyy HH:mm').format(widget.matchDate);
-    final header = 'Match Date & Time,Play Time,Opponent,My Serve?,First Serve?,'
-        'Double Fault?,Won?,Loser\'s Forced Error?,Loser\'s Forehand?';
+    final header = "Match Date & Time,Play Time,Opponent,My Serve?,Server's First Serve?,"
+        "Server Double Fault?,Server Won?,Loser's Forced Error?,Loser's Forehand?";
     final rows = widget.points
         .map((p) => p.toCsvRow(dateStr, widget.opponentName).join(','))
         .join('\n');
@@ -72,7 +72,7 @@ class _ExportSheetState extends State<_ExportSheet> {
     final dateStr = DateFormat('dd MMM yyyy HH:mm').format(widget.matchDate);
     const header = [
       'Match Date & Time', 'Play Time', 'Opponent', 'My Serve?',
-      'First Serve?', 'Double Fault?', 'Won?',
+      "Server's First Serve?", 'Server Double Fault?', 'Server Won?',
       "Loser's Forced Error?", "Loser's Forehand?",
     ];
     final data = widget.points

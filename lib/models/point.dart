@@ -67,7 +67,7 @@ class TennisPoint {
     return '$h:$m:$s';
   }
 
-  String boolVal(bool? v) => v == null ? '' : v ? '1' : '0';
+  String boolVal(bool? v) => v == null ? '' : v ? 'TRUE' : 'FALSE';
 
   List<String> toCsvRow(String matchDateTime, String opponent) => [
     matchDateTime,
@@ -83,12 +83,12 @@ class TennisPoint {
 }
 
 const List<({String key, String label, String abbr})> kFields = [
-  (key: 'myServe',       label: 'My Serve?',              abbr: 'MS'),
-  (key: 'firstServe',    label: 'First Serve?',            abbr: '1S'),
-  (key: 'doubleFault',   label: 'Double Fault?',           abbr: 'DF'),
-  (key: 'serverWon',     label: 'Won?',                    abbr: 'SW'),
-  (key: 'forcedError',   label: "Loser's Forced Error?",   abbr: 'FE'),
-  (key: 'loserForehand', label: "Loser's Forehand?",       abbr: 'LF'),
+  (key: 'myServe',       label: 'My Serve?',                abbr: 'MS'),
+  (key: 'firstServe',    label: "Server's First Serve?",    abbr: '1S'),
+  (key: 'doubleFault',   label: 'Server Double Fault?',     abbr: 'DF'),
+  (key: 'serverWon',     label: 'Server Won?',              abbr: 'SW'),
+  (key: 'forcedError',   label: "Loser's Forced Error?",    abbr: 'FE'),
+  (key: 'loserForehand', label: "Loser's Forehand?",        abbr: 'LF'),
 ];
 
 bool? getField(TennisPoint p, String key) => switch (key) {
