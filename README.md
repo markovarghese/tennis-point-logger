@@ -2,7 +2,6 @@
 
 A mobile app for rapid point-by-point tennis match data entry, built with Flutter and Material You (Material Design 3).
 
-> **Branch note:** the Flutter app lives on the `flutter` branch (where this README sits). The `main` branch holds only a short stub README and `LICENSE`. If you landed here from the GitHub default branch, run `git checkout flutter` first.
 
 ## What it does
 
@@ -71,10 +70,7 @@ Resolve any red ✗ marks before proceeding (Flutter's output tells you exactly 
 git clone https://github.com/<your-org>/tennis-point-logger.git
 cd tennis-point-logger
 
-# 2. Switch to the app branch
-git checkout flutter
-
-# 3. Fetch dependencies
+# 2. Fetch dependencies
 flutter pub get
 
 # 4. List connected devices / emulators
@@ -154,7 +150,7 @@ The repo currently does **not** include an `ios/` folder. You'll generate it onc
 
 ### 1. Generate the iOS project (one-time)
 
-From a Mac, in the repo root on the `flutter` branch:
+From a Mac, in the repo root:
 
 ```bash
 flutter create --platforms=ios --org com.example .
