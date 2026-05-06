@@ -5,6 +5,12 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      build_ios:
+        description: 'Build iOS (no-codesign)'
+        type: boolean
+        default: false
 
 jobs:
   analyze-and-test:
@@ -42,6 +48,7 @@ jobs:
   build-ios:
     name: Build iOS (no-codesign)
     needs: analyze-and-test
+    if: ${{ inputs.build_ios == true }}
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
