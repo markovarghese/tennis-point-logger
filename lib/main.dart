@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'services/google_auth_service.dart';
 import 'theme.dart';
 import 'models/point.dart';
 import 'models/match_settings.dart';
@@ -10,8 +11,9 @@ import 'screens/entry_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/settings_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await GoogleAuthService.instance.initialize();
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,

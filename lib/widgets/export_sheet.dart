@@ -133,9 +133,11 @@ class _ExportSheetState extends State<_ExportSheet> {
       final file = File('${dir.path}/tennis_${widget.opponentName}_$dateStr.csv');
       await file.writeAsString(_csv);
       if (!mounted) return;
-      await Share.shareXFiles(
-        [XFile(file.path, mimeType: 'text/csv')],
-        text: 'Tennis match vs ${widget.opponentName}',
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path, mimeType: 'text/csv')],
+          text: 'Tennis match vs ${widget.opponentName}',
+        ),
       );
     } catch (e) {
       if (!mounted) return;
