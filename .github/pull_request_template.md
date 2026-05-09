@@ -25,3 +25,11 @@
 - [ ] No debug code or commented-out blocks left in
 - [ ] CSV export still produces correct `TRUE`/`FALSE` values (if data model touched)
 - [ ] `google-services.json` not committed (it is gitignored — keep it that way)
+
+## CI (runs automatically on this PR)
+- `flutter analyze` — static analysis
+- `flutter test` — unit tests
+- CodeQL — workflow file security scan
+
+## Notes
+<!-- Anything reviewers should know: follow-up work, known limitations, migration steps. -->
