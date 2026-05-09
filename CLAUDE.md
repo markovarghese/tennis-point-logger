@@ -2,6 +2,26 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Branch & PR Workflow
+
+- Default branch is `main` (not `master`)
+- NEVER push directly to main — it has branch protection. Always create a feature branch and open a PR.
+- The active development branch is `flutter` — check which branch contains the code before editing files like README.md
+- Verify current branch with `git branch --show-current` before making commits
+
+## Shell Environment
+
+- User runs PowerShell on Windows, NOT bash
+- Do not use bash-isms: no backslash line continuations, no `$(pwd)`, no `&&` chaining assumptions
+- Use PowerShell-compatible syntax: backtick for line continuation, `${PWD}`, `;` for command chaining
+- Prefer cross-platform commands when writing docs/READMEs
+
+## Guardrails
+
+- Do NOT run setup/install commands (e.g., downloading Flutter SDK, launching emulators) without first confirming with the user
+- For UI automation tasks, ask whether `flutter test` / integration tests would be faster than computer-use screenshot loops before starting
+- When a tool/approach is failing repeatedly (emulator, URL fetch), stop after 2 attempts and ask for direction
+
 ## Commands
 
 ```bash
