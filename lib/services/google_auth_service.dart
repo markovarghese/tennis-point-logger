@@ -2,6 +2,7 @@ import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sig
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:googleapis/sheets/v4.dart' as sheets;
+// ignore: depend_on_referenced_packages
 import 'package:googleapis_auth/googleapis_auth.dart' as gapis;
 import 'package:intl/intl.dart';
 import '../models/match_settings.dart';

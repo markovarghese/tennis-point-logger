@@ -119,8 +119,8 @@ class _ScoreOverrideSheetState extends State<_ScoreOverrideSheet> {
             ),
           ),
           const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
             child: Text(
               "New points will be appended — override doesn't delete history.",
               style: TextStyle(fontSize: 11, color: AppColors.onSurfaceVar),
@@ -243,7 +243,7 @@ class _NumPicker extends StatelessWidget {
                     color: sel ? AppColors.primary : Colors.transparent,
                     width: 2,
                   ),
-                  boxShadow: sel ? [BoxShadow(
+                  boxShadow: sel ? [const BoxShadow(
                     color: AppColors.primaryContainer,
                     blurRadius: 0, spreadRadius: 3,
                   )] : null,

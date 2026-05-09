@@ -200,12 +200,12 @@ class _AppShellState extends State<_AppShell> {
     // Match tab
     return switch (_screen) {
       _AppScreen.setup => SetupScreen(onStart: _handleStart),
-      _AppScreen.entry => _EntryWithFab(),
+      _AppScreen.entry => _entryWithFab(),
       _ => SetupScreen(onStart: _handleStart),
     };
   }
 
-  Widget _EntryWithFab() {
+  Widget _entryWithFab() {
     return EntryScreen(
       points: _points,
       currentPoint: _currentPoint,
