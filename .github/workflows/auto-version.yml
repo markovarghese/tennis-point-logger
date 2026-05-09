@@ -1,0 +1,98 @@
+name: Auto Version Bump
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - pubspec.yaml  # Prevents re-triggering on the version bump commit itself
+
+concurrency:
+  group: auto-version
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    name: Bump Version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history needed to find last tag
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Determine bump type from conventional commits
+        id: bump
+        run: |
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+          if [ -z "$LAST_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"%s")
+          else
+            COMMITS=$(git log --pretty=format:"%s" "${LAST_TAG}..HEAD")
+          fi
+
+          echo "Commits since ${LAST_TAG:-beginning}:"
+          echo "$COMMITS"
+
+          if echo "$COMMITS" | grep -qE '^(feat|fix|refactor)!:|BREAKING CHANGE'; then
+            BUMP="major"
+          elif echo "$COMMITS" | grep -qE '^feat(\([^)]+\))?!?:'; then
+            BUMP="minor"
+          elif echo "$COMMITS" | grep -qE '^fix(\([^)]+\))?:'; then
+            BUMP="patch"
+          else
+            echo "No releasable commits (feat/fix/breaking change). Skipping."
+            echo "skip=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "bump=$BUMP" >> $GITHUB_OUTPUT
+          echo "Bump type: $BUMP"
+
+      - name: Compute new version
+        if: steps.bump.outputs.skip != 'true'
+        id: version
+        run: |
+          CURRENT=$(grep '^version:' pubspec.yaml | sed 's/version: //')
+          SEMVER=$(echo "$CURRENT" | cut -d'+' -f1)
+          BUILD=$(echo "$CURRENT" | cut -d'+' -f2)
+
+          MAJOR=$(echo "$SEMVER" | cut -d'.' -f1)
+          MINOR=$(echo "$SEMVER" | cut -d'.' -f2)
+          PATCH=$(echo "$SEMVER" | cut -d'.' -f3)
+
+          case "${{ steps.bump.outputs.bump }}" in
+            major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+            minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+            patch) PATCH=$((PATCH + 1)) ;;
+          esac
+
+          NEW_BUILD=$((BUILD + 1))
+          NEW_SEMVER="${MAJOR}.${MINOR}.${PATCH}"
+          NEW_VERSION="${NEW_SEMVER}+${NEW_BUILD}"
+
+          echo "new_semver=$NEW_SEMVER" >> $GITHUB_OUTPUT
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "Current: $CURRENT → New: $NEW_VERSION (${{ steps.bump.outputs.bump }} bump)"
+
+      - name: Update pubspec.yaml
+        if: steps.bump.outputs.skip != 'true'
+        run: |
+          sed -i "s/^version: .*/version: ${{ steps.version.outputs.new_version }}/" pubspec.yaml
+          grep '^version:' pubspec.yaml
+
+      - name: Commit, tag, and push
+        if: steps.bump.outputs.skip != 'true'
+        run: |
+          git add pubspec.yaml
+          git commit -m "chore: bump version to ${{ steps.version.outputs.new_semver }}"
+          git tag "v${{ steps.version.outputs.new_semver }}"
+          git push origin main
+          git push origin "v${{ steps.version.outputs.new_semver }}"
