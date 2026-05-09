@@ -72,16 +72,16 @@ Resolve any red ✗ marks before proceeding (Flutter's output tells you exactly 
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/<your-org>/tennis-point-logger.git
+git clone https://github.com/markovarghese/tennis-point-logger.git
 cd tennis-point-logger
 
 # 2. Fetch dependencies
 flutter pub get
 
-# 4. List connected devices / emulators
+# 3. List connected devices / emulators
 flutter devices
 
-# 5. Run in debug mode on the first available device
+# 4. Run in debug mode on the first available device
 flutter run
 
 # Or target a specific device
@@ -113,7 +113,6 @@ flutter test
 
 | Requirement | Details |
 |---|---|
-| **Flutter SDK** | 3.16+ (same as the rest of the project) |
 | **patrol CLI** | A patched patrol CLI is required. See `integration_test/e2e_match_flow_test.dart` for the exact run command. |
 | **Android emulator** | Pixel 7 Pro AVD recommended; API 34+ for Credential Manager |
 | **Google account in the emulator** | Open the emulator → Settings → Accounts → Add Account → Google, and sign in to the test account once. patrol will tap that account in the native Credential Manager sheet during the test. |
@@ -323,7 +322,8 @@ static const _webClientId = '<YOUR_WEB_CLIENT_ID>.apps.googleusercontent.com';
 
 ### Notes
 
-- No `google-services.json` is required for this setup — the `google_sign_in` Flutter package uses the Web client ID directly.
+- The `google_sign_in` Flutter package uses the Web client ID directly — you do **not** need `google-services.json` for Sign-In or Sheets sync.
+- **Firebase Crashlytics** (also wired up in this project) *does* require a `google-services.json`. Obtain it from [Firebase Console](https://console.firebase.google.com) → your project → Project settings → Android app → Download `google-services.json`, then place it at `android/app/google-services.json`. This file is gitignored and must be added manually on each machine.
 - For a **release build** (Play Store), repeat step 3 with your upload/release keystore and create a second Android OAuth client for that SHA-1.
 - iOS support requires a separate iOS OAuth client (bundle ID only, no SHA-1) and a `GoogleService-Info.plist` — see the [google_sign_in iOS setup guide](https://pub.dev/packages/google_sign_in#ios-integration).
 
