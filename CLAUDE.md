@@ -2,6 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Worktrees
+
+Always work in a git worktree. At the start of every session, before editing any files, use the `EnterWorktree` tool to create an isolated worktree. Name the worktree after the task (e.g., `fix-score-banner`, `feat-export-csv`). When done, exit via `ExitWorktree` — keep the worktree if there are commits to PR, remove it if the work was discarded.
+
+To start a session directly in a worktree from the CLI:
+```
+claude --worktree <task-name>
+```
+
 ## Branch & PR Workflow
 
 - Default branch is `main` (not `master`)
