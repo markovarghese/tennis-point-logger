@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../services/app_log.dart';
 import '../theme.dart';
 
 class SetupScreen extends StatefulWidget {
@@ -30,7 +31,10 @@ class _SetupScreenState extends State<SetupScreen> {
         child: child!,
       ),
     );
-    if (picked != null) setState(() => _date = picked);
+    if (picked != null) {
+      AppLog.info('setup: date → ${DateFormat('d MMM yyyy').format(picked)}');
+      setState(() => _date = picked);
+    }
   }
 
   @override
@@ -95,6 +99,7 @@ class _SetupScreenState extends State<SetupScreen> {
                   ),
                   const SizedBox(height: 6),
                   TextField(
+                    key: const Key('opponent_name_field'),
                     controller: _opponentCtrl,
                     autofocus: true,
                     style: const TextStyle(fontSize: 16, color: AppColors.onSurface),
@@ -175,6 +180,7 @@ class _SetupScreenState extends State<SetupScreen> {
               width: double.infinity,
               height: 56,
               child: FilledButton(
+                key: const Key('start_match_button'),
                 onPressed: _canStart
                     ? () => widget.onStart(_opponentCtrl.text.trim(), _date)
                     : null,

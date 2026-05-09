@@ -1,5 +1,10 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
+import 'services/app_log.dart';
 import 'services/google_auth_service.dart';
 import 'theme.dart';
 import 'models/point.dart';
@@ -13,11 +18,25 @@ import 'screens/settings_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp();
+
+  // Pass all uncaught "fatal" errors from the framework to Crashlytics
+  FlutterError.onError = (errorDetails) {
+    FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
+  };
+  // Pass all uncaught asynchronous errors that aren't handled by the Flutter framework to Crashlytics
+  PlatformDispatcher.instance.onError = (error, stack) {
+    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    return true;
+  };
+
   await GoogleAuthService.instance.initialize();
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
+  AppLog.info('app: started');
   runApp(const TennisLoggerApp());
 }
 
@@ -56,6 +75,7 @@ class _AppShellState extends State<_AppShell> {
   ScoreOverride? _scoreOverride;
 
   void _handleStart(String opponent, DateTime date) {
+    AppLog.info('match: start opponent="$opponent" date=${DateFormat('d MMM yyyy').format(date)}');
     setState(() {
       _opponentName = opponent;
       _matchDate = date;
@@ -73,16 +93,66 @@ class _AppShellState extends State<_AppShell> {
   }
 
   void _handleNext() {
+    final point = _currentPoint;
     setState(() {
-      _points = [..._points, _currentPoint];
+      _points = [..._points, point];
       _currentPoint = TennisPoint.fresh();
     });
+    AppLog.info('match: point #${_points.length} logged');
+    _autoSync(point);
+  }
+
+  Future<void> _autoSync(TennisPoint point, {int? index}) async {
+    final s = _settings;
+    if (s.gsState != GsState.connected) return;
+    if (!s.autoSyncAfterPoint) return;
+
+    final dateStr = DateFormat('dd MMM yyyy HH:mm').format(_matchDate);
+    final row = point.toCsvRow(dateStr, _opponentName);
+    final isUpdate = index != null;
+
+    try {
+      if (s.sheetMode == SheetMode.existing && s.selectedSheet != null) {
+        if (isUpdate) {
+          // For existing sheets, we don't know the starting row easily without more tracking.
+          AppLog.info('sync: update skipped for existing sheet');
+        } else {
+          await GoogleAuthService.instance.appendToSheet(
+            s.selectedSheet!.id,
+            [row],
+            range: 'LoggerData',
+          );
+          AppLog.info('sync: ok → existing sheet "${s.selectedSheet!.name}"');
+        }
+      } else if (s.sheetMode == SheetMode.create && s.sheetsId != null) {
+        if (isUpdate) {
+          final rowNum = index + 2; // Point 0 is row 2 in template
+          await GoogleAuthService.instance.updateRow(s.sheetsId!, 'Logger!A$rowNum', row);
+          AppLog.info('sync: ok (update) → logger sheet row $rowNum');
+        } else {
+          await GoogleAuthService.instance.appendRowToLogger(s.sheetsId!, row);
+          AppLog.info('sync: ok (append) → logger sheet');
+        }
+      }
+    } catch (e) {
+      AppLog.error('sync: failed', e);
+    }
   }
 
   void _handleEditPoint(TennisPoint edited) {
-    setState(() {
-      _points = _points.map((p) => p.id == edited.id ? edited : p).toList();
-    });
+    final idx = _points.indexWhere((p) => p.id == edited.id);
+    if (idx != -1) {
+      AppLog.info('match: point #${idx + 1} edited');
+      setState(() {
+        _points[idx] = edited;
+      });
+      _autoSync(edited, index: idx);
+    } else {
+      AppLog.info('match: point edited (unknown index)');
+      setState(() {
+        _points = _points.map((p) => p.id == edited.id ? edited : p).toList();
+      });
+    }
   }
 
   @override
@@ -148,7 +218,6 @@ class _AppShellState extends State<_AppShell> {
       onBackToSetup: () => setState(() => _screen = _AppScreen.setup),
       onExport: () => showExportSheet(
         context, _points, _opponentName, _matchDate,
-        settings: _settings,
       ),
       onEditPoint: _handleEditPoint,
       scoreOverride: _scoreOverride,

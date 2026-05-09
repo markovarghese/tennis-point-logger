@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import '../models/match_settings.dart';
+import '../services/app_log.dart';
 import '../services/google_auth_service.dart';
 import '../theme.dart';
 
@@ -17,6 +20,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late AppSettings _s;
   late TextEditingController _nameCtrl;
   bool _templateEditing = false;
+  bool _creatingSheet = false;
   late TextEditingController _templateCtrl;
 
   @override
@@ -58,6 +62,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _applyPreset(String id) {
     final fmt = MatchFormat.presets[id];
     if (fmt == null) return;
+    AppLog.info('settings: format preset → $id');
     _update(_s.copyWith(formatPreset: id, format: fmt));
   }
 
@@ -67,12 +72,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final email = await GoogleAuthService.instance.signIn();
       if (!mounted) return;
       if (email != null) {
+        AppLog.info('auth: signed in as $email');
         _update(_s.copyWith(gsState: GsState.connected, gsAccount: email));
       } else {
+        AppLog.info('auth: sign-in cancelled');
         _update(_s.copyWith(gsState: GsState.disconnected));
       }
     } catch (e) {
       if (!mounted) return;
+      AppLog.error('auth: sign-in failed', e);
       _update(_s.copyWith(gsState: GsState.disconnected));
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Sign-in failed: $e')),
@@ -82,6 +90,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _disconnectGoogle() async {
     await GoogleAuthService.instance.signOut();
+    AppLog.info('auth: signed out');
     if (!mounted) return;
     _update(_s.copyWith(
       gsState: GsState.disconnected,
@@ -115,8 +124,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
         isFolder: true,
       ),
     );
-    if (result != null) {
-      _update(_s.copyWith(selectedFolder: result));
+    if (result == null || !mounted) return;
+    AppLog.info('settings: folder → "${result.name}"');
+
+    // Clear any previously-created sheet so the UI resets to "creating".
+    _update(_s.copyWith(selectedFolder: result, clearSheetsId: true));
+
+    final templateId = _parseSheetId(_s.templateUrl);
+    if (templateId == null) return;
+
+    setState(() => _creatingSheet = true);
+    try {
+      final ts = DateFormat('yyyyMMddHHmm').format(DateTime.now());
+      final sheetId = await GoogleAuthService.instance.copyTemplate(
+        templateId, result.id, 'TennisPointLogger_$ts',
+      );
+      if (!mounted) return;
+      AppLog.info('settings: sheet created');
+      _update(_s.copyWith(sheetsId: sheetId));
+    } catch (e) {
+      if (!mounted) return;
+      AppLog.error('settings: sheet create failed', e);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to create sheet: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _creatingSheet = false);
     }
   }
 
@@ -144,6 +177,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
     if (result != null) {
+      AppLog.info('settings: existing sheet → "${result.name}"');
       _update(_s.copyWith(selectedSheet: result, sheetsId: result.id));
     }
   }
@@ -207,6 +241,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   onChanged: (v) => _update(_s.copyWith(playerName: v)),
+                  onEditingComplete: () {
+                    AppLog.info('settings: playerName → "${_nameCtrl.text}"');
+                    FocusScope.of(context).unfocus();
+                  },
                 ),
               ],
             ),
@@ -228,19 +266,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
               label: 'Auto-sync after each point',
               sub: 'Sends each row immediately on "Next Point"',
               value: _s.autoSyncAfterPoint,
-              onChanged: (v) => _update(_s.copyWith(autoSyncAfterPoint: v)),
+              onChanged: (v) {
+                AppLog.info('settings: autoSyncAfterPoint → $v');
+                _update(_s.copyWith(autoSyncAfterPoint: v));
+              },
             ),
             _SyncRow(
               label: 'Sync on match end only',
               sub: 'Batch upload when you finish the match',
               value: _s.syncOnMatchEnd,
-              onChanged: (v) => _update(_s.copyWith(syncOnMatchEnd: v)),
+              onChanged: (v) {
+                AppLog.info('settings: syncOnMatchEnd → $v');
+                _update(_s.copyWith(syncOnMatchEnd: v));
+              },
             ),
             _SyncRow(
               label: 'Keep offline copy',
               sub: 'Store all data locally even when synced',
               value: _s.keepOfflineCopy,
-              onChanged: (v) => _update(_s.copyWith(keepOfflineCopy: v)),
+              onChanged: (v) {
+                AppLog.info('settings: keepOfflineCopy → $v');
+                _update(_s.copyWith(keepOfflineCopy: v));
+              },
             ),
           ],
 
@@ -346,10 +393,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: _SegPicker(
               options: const ['1', '2', '3', '5'],
               value: '${_s.format.setsInMatch}',
-              onChanged: (v) => _update(_s.copyWith(
-                formatPreset: 'custom',
-                format: _s.format.copyWith(setsInMatch: int.parse(v)),
-              )),
+              onChanged: (v) {
+                AppLog.info('settings: setsInMatch → $v');
+                _update(_s.copyWith(
+                  formatPreset: 'custom',
+                  format: _s.format.copyWith(setsInMatch: int.parse(v)),
+                ));
+              },
             ),
           ),
           _FormatRow(
@@ -358,10 +408,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: _SegPicker(
               options: const ['4', '6', '8'],
               value: '${_s.format.gamesPerSet}',
-              onChanged: (v) => _update(_s.copyWith(
-                formatPreset: 'custom',
-                format: _s.format.copyWith(gamesPerSet: int.parse(v)),
-              )),
+              onChanged: (v) {
+                AppLog.info('settings: gamesPerSet → $v');
+                _update(_s.copyWith(
+                  formatPreset: 'custom',
+                  format: _s.format.copyWith(gamesPerSet: int.parse(v)),
+                ));
+              },
             ),
           ),
           _FormatRow(
@@ -369,10 +422,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: _SegPicker(
               options: const ['Ad', 'No-Ad'],
               value: _s.format.adScoring ? 'Ad' : 'No-Ad',
-              onChanged: (v) => _update(_s.copyWith(
-                formatPreset: 'custom',
-                format: _s.format.copyWith(adScoring: v == 'Ad'),
-              )),
+              onChanged: (v) {
+                AppLog.info('settings: adScoring → $v');
+                _update(_s.copyWith(
+                  formatPreset: 'custom',
+                  format: _s.format.copyWith(adScoring: v == 'Ad'),
+                ));
+              },
             ),
           ),
           _FormatRow(
@@ -383,11 +439,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               value: _s.format.tiebreakPoints == 0
                   ? 'None'
                   : '${_s.format.tiebreakPoints}',
-              onChanged: (v) => _update(_s.copyWith(
-                formatPreset: 'custom',
-                format: _s.format.copyWith(
-                  tiebreakPoints: v == 'None' ? 0 : int.parse(v)),
-              )),
+              onChanged: (v) {
+                AppLog.info('settings: tiebreakPoints → $v');
+                _update(_s.copyWith(
+                  formatPreset: 'custom',
+                  format: _s.format.copyWith(
+                    tiebreakPoints: v == 'None' ? 0 : int.parse(v)),
+                ));
+              },
             ),
           ),
           _FormatRow(
@@ -400,26 +459,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 FinalSetType.tenPointTb => '10-pt TB',
                 FinalSetType.sixPointTb => '6-pt TB',
               },
-              onChanged: (v) => _update(_s.copyWith(
-                formatPreset: 'custom',
-                format: _s.format.copyWith(
-                  finalSet: switch (v) {
-                    '6-pt TB' => FinalSetType.sixPointTb,
-                    'Full' => FinalSetType.full,
-                    _ => FinalSetType.tenPointTb,
-                  },
-                ),
-              )),
+              onChanged: (v) {
+                AppLog.info('settings: finalSet → $v');
+                _update(_s.copyWith(
+                  formatPreset: 'custom',
+                  format: _s.format.copyWith(
+                    finalSet: switch (v) {
+                      '6-pt TB' => FinalSetType.sixPointTb,
+                      'Full' => FinalSetType.full,
+                      _ => FinalSetType.tenPointTb,
+                    },
+                  ),
+                ));
+              },
             ),
           ),
 
           // About
           const _SectionTitle('About'),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 14, 20, 40),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              children: const [
                 Text('Tennis Logger v1.0.0',
                   style: TextStyle(fontSize: 13, color: AppColors.onSurfaceVar)),
                 SizedBox(height: 4),
@@ -432,6 +494,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Text('Google Sheets API v4',
                   style: TextStyle(fontSize: 12, color: AppColors.outline)),
               ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+            child: OutlinedButton.icon(
+              onPressed: () => _showLogSheet(context),
+              icon: const Icon(Icons.list_alt_outlined, size: 18),
+              label: const Text('View debug log'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.onSurfaceVar,
+                side: const BorderSide(color: AppColors.outlineVariant),
+                shape: const StadiumBorder(),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              ),
             ),
           ),
         ],
@@ -451,7 +527,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           const Text(
             'When you create a new sheet, the app copies this template, then clears the '
-            'LoggerData table — keeping the Logger tab structure, pivot tables and charts intact.',
+            'LoggerData table while preserving any formulae — keeping the Logger tab structure, pivot tables and charts intact.',
             style: TextStyle(fontSize: 13, color: AppColors.onSurfaceVar, height: 1.5),
           ),
           const SizedBox(height: 12),
@@ -614,6 +690,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () {
+                      AppLog.info('settings: template URL reset to default');
                       _templateCtrl.text = AppSettings.defaultTemplateUrl;
                       _update(_s.copyWith(templateUrl: AppSettings.defaultTemplateUrl));
                       setState(() => _templateEditing = false);
@@ -632,6 +709,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: FilledButton(
                     onPressed: _parseSheetId(_templateCtrl.text) != null
                         ? () {
+                            AppLog.info('settings: template URL saved');
                             _update(_s.copyWith(templateUrl: _templateCtrl.text));
                             setState(() => _templateEditing = false);
                           }
@@ -675,6 +753,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 width: double.infinity,
                 height: 48,
                 child: FilledButton.icon(
+                  key: const Key('sign_in_button'),
                   onPressed: _connectGoogle,
                   icon: const _GoogleLogo(size: 20),
                   label: const Text('Sign in with Google',
@@ -716,6 +795,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final email = _s.gsAccount ?? '';
         final initial = email.isNotEmpty ? email[0].toUpperCase() : '?';
         return Container(
+          key: const Key('google_connected'),
           decoration: const BoxDecoration(
             border: Border(bottom: BorderSide(color: AppColors.outlineVariant)),
           ),
@@ -784,7 +864,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildSheetsDestinationSection() {
     final mode = _s.sheetMode;
-    final year = DateTime.now().year;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -839,15 +918,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
         // Mode-specific body
         if (mode == SheetMode.create)
-          _buildCreateMode(year)
+          _buildCreateMode()
         else
           _buildExistingMode(),
       ],
     );
   }
 
-  Widget _buildCreateMode(int year) {
+  Widget _buildCreateMode() {
     final folder = _s.selectedFolder;
+    final ts = DateFormat('yyyyMMddHHmm').format(DateTime.now());
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
       decoration: const BoxDecoration(
@@ -865,7 +945,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   text: 'copy your template sheet',
                   style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.onSurface),
                 ),
-                TextSpan(text: ' there as TennisLogger_$year.xlsx, then clear the '),
+                TextSpan(text: ' there as TennisPointLogger_$ts, then clear the '),
                 const TextSpan(
                   text: 'LoggerData',
                   style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.onSurface),
@@ -881,6 +961,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 12),
           _PickerButton(
+            key: const Key('folder_picker'),
             icon: folder != null ? '📁' : '📂',
             title: folder?.name ?? 'Choose folder',
             sub: folder == null ? 'Tap to browse Google Drive' : null,
@@ -890,6 +971,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           if (folder != null) ...[
             const SizedBox(height: 10),
             Container(
+              key: const Key('sheet_status'),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: AppColors.secondaryContainer,
@@ -903,20 +985,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('TennisLogger_$year.xlsx',
+                        Text('TennisPointLogger_$ts',
                           style: const TextStyle(
                             fontSize: 13, fontWeight: FontWeight.w600,
                             color: AppColors.onSecondaryContainer)),
-                        Text('Copy of template → ${folder.name}, LoggerData empty',
+                        Text(
+                          _creatingSheet
+                              ? 'Copying template to ${folder.name}…'
+                              : _s.sheetsId != null
+                                  ? 'Copy of template → ${folder.name}, LoggerData ready'
+                                  : 'Tap folder above to retry',
                           style: const TextStyle(fontSize: 11, color: AppColors.onSurfaceVar)),
                       ],
                     ),
                   ),
-                  const Text('✓ Ready',
-                    style: TextStyle(
-                      fontSize: 11, fontWeight: FontWeight.w700,
-                      color: Color(0xFF34A853),
-                    )),
+                  if (_creatingSheet)
+                    const SizedBox(
+                      width: 14, height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  else if (_s.sheetsId != null)
+                    const Text('✓ Ready',
+                      style: TextStyle(
+                        fontSize: 11, fontWeight: FontWeight.w700,
+                        color: Color(0xFF34A853),
+                      ))
+                  else
+                    const Text('⚠ Failed',
+                      style: TextStyle(
+                        fontSize: 11, fontWeight: FontWeight.w700,
+                        color: Colors.orange,
+                      )),
                 ],
               ),
             ),
@@ -995,6 +1094,121 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+void _showLogSheet(BuildContext context) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => const _LogSheet(),
+  );
+}
+
+class _LogSheet extends StatelessWidget {
+  const _LogSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    final entries = AppLog.entries;
+    return DraggableScrollableSheet(
+      initialChildSize: 0.7,
+      minChildSize: 0.4,
+      maxChildSize: 0.95,
+      builder: (_, scrollController) => Container(
+        decoration: const BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 4),
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.outlineVariant,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 8, 8),
+              child: Row(
+                children: [
+                  const Text('Debug Log', style: TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w700,
+                    color: AppColors.onSurface,
+                  )),
+                  const Spacer(),
+                  TextButton.icon(
+                    onPressed: () {
+                      Clipboard.setData(ClipboardData(text: AppLog.formatted()));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Log copied to clipboard')),
+                      );
+                    },
+                    icon: const Icon(Icons.copy_outlined, size: 16),
+                    label: const Text('Copy all'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1, color: AppColors.outlineVariant),
+            Expanded(
+              child: entries.isEmpty
+                  ? const Center(
+                      child: Text('No log entries yet.',
+                        style: TextStyle(color: AppColors.onSurfaceVar)),
+                    )
+                  : ListView.builder(
+                      controller: scrollController,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemCount: entries.length,
+                      itemBuilder: (_, i) {
+                        // Show newest first
+                        final e = entries[entries.length - 1 - i];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 3),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(e.timeStr, style: const TextStyle(
+                                fontSize: 11, fontFamily: 'monospace',
+                                color: AppColors.onSurfaceVar,
+                              )),
+                              const SizedBox(width: 8),
+                              Container(
+                                width: 6, height: 6,
+                                margin: const EdgeInsets.only(top: 4),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: e.isError
+                                      ? Colors.red
+                                      : AppColors.primary,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(e.message, style: const TextStyle(
+                                  fontSize: 12, fontFamily: 'monospace',
+                                  color: AppColors.onSurface, height: 1.4,
+                                )),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1152,6 +1366,7 @@ class _PickerButton extends StatelessWidget {
   final VoidCallback onTap;
 
   const _PickerButton({
+    super.key,
     required this.icon,
     required this.title,
     this.sub,
@@ -1312,41 +1527,65 @@ class _PickerModal<T> extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          ...items.map((item) {
-            final folder = item is DriveFolder ? item : null;
-            final sheet = item is DriveSheet ? item : null;
-            final name = folder?.name ?? sheet?.name ?? '';
-            final modified = sheet?.modified;
-            return InkWell(
-              onTap: () => Navigator.pop(context, item),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                child: Row(
-                  children: [
-                    Text(isFolder ? '📁' : '📊',
-                      style: const TextStyle(fontSize: 22)),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(name,
-                            style: const TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w600,
-                              color: AppColors.onSurface)),
-                          if (modified != null)
-                            Text('Modified $modified',
-                              style: const TextStyle(
-                                fontSize: 11, color: AppColors.onSurfaceVar)),
-                        ],
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.5,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (items.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      child: Text(
+                        isFolder
+                            ? 'No folders found in Google Drive.'
+                            : 'No spreadsheets found in Google Drive.',
+                        style: const TextStyle(
+                            fontSize: 14, color: AppColors.onSurfaceVar),
                       ),
                     ),
-                    const Text('›', style: TextStyle(fontSize: 18, color: AppColors.outline)),
-                  ],
-                ),
+                  ...items.map((item) {
+                    final folder = item is DriveFolder ? item : null;
+                    final sheet = item is DriveSheet ? item : null;
+                    final name = folder?.name ?? sheet?.name ?? '';
+                    final modified = sheet?.modified;
+                    return InkWell(
+                      onTap: () => Navigator.pop(context, item),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        child: Row(
+                          children: [
+                            Text(isFolder ? '📁' : '📊',
+                              style: const TextStyle(fontSize: 22)),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(name,
+                                    style: const TextStyle(
+                                      fontSize: 14, fontWeight: FontWeight.w600,
+                                      color: AppColors.onSurface)),
+                                  if (modified != null)
+                                    Text('Modified $modified',
+                                      style: const TextStyle(
+                                        fontSize: 11, color: AppColors.onSurfaceVar)),
+                                ],
+                              ),
+                            ),
+                            const Text('›', style: TextStyle(fontSize: 18, color: AppColors.outline)),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                ],
               ),
-            );
-          }),
+            ),
+          ),
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),

@@ -196,6 +196,7 @@ class _EntryScreenState extends State<EntryScreen> {
             itemBuilder: (context, i) {
               final f = kFields[i];
               return TriChip(
+                key: Key('chip_${f.key}'),
                 value: getField(_displayPoint, f.key),
                 label: f.label,
                 onChange: (v) => _handleChipChange(f.key, v),
@@ -241,6 +242,7 @@ class _NavStrip extends StatelessWidget {
       child: Row(
         children: [
           _NavBtn(
+            key: const Key('nav_prev'),
             onTap: onPrev,
             child: Text('‹', style: TextStyle(
               fontSize: 22,
@@ -268,6 +270,7 @@ class _NavStrip extends StatelessWidget {
             ),
           ),
           _NavBtn(
+            key: const Key('nav_next'),
             onTap: onNext,
             child: Text('›', style: TextStyle(
               fontSize: 22,
@@ -295,7 +298,7 @@ class _NavStrip extends StatelessWidget {
 class _NavBtn extends StatelessWidget {
   final VoidCallback? onTap;
   final Widget child;
-  const _NavBtn({required this.onTap, required this.child});
+  const _NavBtn({super.key, required this.onTap, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -377,6 +380,7 @@ class _BottomCta extends StatelessWidget {
         width: double.infinity,
         height: isNew ? 56 : 52,
         child: FilledButton(
+          key: const Key('bottom_cta_button'),
           onPressed: onNext,
           style: FilledButton.styleFrom(
             backgroundColor: AppColors.primary,

@@ -11,14 +11,16 @@ build/
 
 # Android
 android/.gradle/
+android/app/google-services.json
 android/local.properties
 android/gradle/wrapper/gradle-wrapper.jar
 android/gradlew
 android/gradlew.bat
-android/app/google-services.json
 
 # Generated
 android/app/src/main/java/
+integration_test/test_bundle.dart
+android/app/src/androidTest/
 
 # JetBrains/IntelliJ
 .idea/

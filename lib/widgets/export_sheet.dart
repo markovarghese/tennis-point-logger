@@ -4,18 +4,15 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
-import '../models/match_settings.dart';
 import '../models/point.dart';
-import '../services/google_auth_service.dart';
 import '../theme.dart';
 
 Future<void> showExportSheet(
   BuildContext context,
   List<TennisPoint> points,
   String opponentName,
-  DateTime matchDate, {
-  required AppSettings settings,
-}) {
+  DateTime matchDate,
+) {
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -24,7 +21,6 @@ Future<void> showExportSheet(
       points: points,
       opponentName: opponentName,
       matchDate: matchDate,
-      settings: settings,
     ),
   );
 }
@@ -33,13 +29,11 @@ class _ExportSheet extends StatefulWidget {
   final List<TennisPoint> points;
   final String opponentName;
   final DateTime matchDate;
-  final AppSettings settings;
 
   const _ExportSheet({
     required this.points,
     required this.opponentName,
     required this.matchDate,
-    required this.settings,
   });
 
   @override
@@ -48,7 +42,6 @@ class _ExportSheet extends StatefulWidget {
 
 class _ExportSheetState extends State<_ExportSheet> {
   bool _copied = false;
-  bool _syncing = false;
 
   String get _csv {
     final dateStr = DateFormat('dd MMM yyyy HH:mm').format(widget.matchDate);
@@ -66,64 +59,6 @@ class _ExportSheetState extends State<_ExportSheet> {
     setState(() => _copied = true);
     await Future.delayed(const Duration(seconds: 2));
     if (mounted) setState(() => _copied = false);
-  }
-
-  List<List<String>> _buildRows({required bool includeHeader}) {
-    final dateStr = DateFormat('dd MMM yyyy HH:mm').format(widget.matchDate);
-    const header = [
-      'Match Date & Time', 'Play Time', 'Opponent', 'My Serve?',
-      "Server's First Serve?", 'Server Double Fault?', 'Server Won?',
-      "Loser's Forced Error?", "Loser's Forehand?",
-    ];
-    final data = widget.points
-        .map((p) => p.toCsvRow(dateStr, widget.opponentName))
-        .toList();
-    return includeHeader ? [header, ...data] : data;
-  }
-
-  Future<void> _openInSheets() async {
-    final s = widget.settings;
-    if (s.gsState != GsState.connected) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Connect Google account in Settings first.')),
-      );
-      return;
-    }
-
-    setState(() => _syncing = true);
-    try {
-      if (s.sheetMode == SheetMode.existing && s.selectedSheet != null) {
-        await GoogleAuthService.instance.appendToSheet(
-          s.selectedSheet!.id,
-          _buildRows(includeHeader: false),
-        );
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(
-            'Appended ${widget.points.length} rows to ${s.selectedSheet!.name}')),
-        );
-      } else {
-        final title = 'TennisLogger_${widget.opponentName}_'
-            '${DateFormat('yyyyMMdd').format(widget.matchDate)}';
-        await GoogleAuthService.instance.createSheet(
-          title,
-          s.selectedFolder?.id,
-          _buildRows(includeHeader: true),
-        );
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(
-            'Created "$title" with ${widget.points.length} rows')),
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Sync failed: $e')),
-      );
-    } finally {
-      if (mounted) setState(() => _syncing = false);
-    }
   }
 
   Future<void> _saveToDevice() async {
@@ -191,16 +126,6 @@ class _ExportSheetState extends State<_ExportSheet> {
             sub: 'Paste into any spreadsheet',
             accent: _copied,
             onTap: _copyCSV,
-          ),
-          const SizedBox(height: 8),
-          _ExportAction(
-            icon: '📊',
-            label: _syncing ? 'Syncing…' : 'Open in Google Sheets',
-            sub: widget.settings.gsState == GsState.connected
-                ? 'Sync via Sheets API'
-                : 'Connect Google in Settings',
-            accent: false,
-            onTap: _syncing ? () {} : _openInSheets,
           ),
           const SizedBox(height: 8),
           _ExportAction(

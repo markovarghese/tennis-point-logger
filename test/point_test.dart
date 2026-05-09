@@ -7,8 +7,8 @@ void main() {
 
   group('boolVal', () {
     test('null → empty string', () => expect(blank().boolVal(null), ''));
-    test('true → "1"', () => expect(blank().boolVal(true), '1'));
-    test('false → "0"', () => expect(blank().boolVal(false), '0'));
+    test('true → "TRUE"', () => expect(blank().boolVal(true), 'TRUE'));
+    test('false → "FALSE"', () => expect(blank().boolVal(false), 'FALSE'));
   });
 
   group('withField', () {
@@ -81,11 +81,11 @@ void main() {
         forcedError: false, loserForehand: null,
       );
       final row = p.toCsvRow('2024-06-15', 'Opp');
-      expect(row[3], '1');  // myServe
-      expect(row[4], '0');  // firstServe
+      expect(row[3], 'TRUE');  // myServe
+      expect(row[4], 'FALSE');  // firstServe
       expect(row[5], '');   // doubleFault null
-      expect(row[6], '1');  // serverWon
-      expect(row[7], '0');  // forcedError
+      expect(row[6], 'TRUE');  // serverWon
+      expect(row[7], 'FALSE');  // forcedError
       expect(row[8], '');   // loserForehand null
     });
   });
