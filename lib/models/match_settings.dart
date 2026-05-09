@@ -107,6 +107,10 @@ class AppSettings {
   final DriveFolder? selectedFolder;
   final DriveSheet? selectedSheet;
   final String? sheetsId;
+  final String templateUrl;
+
+  static const String defaultTemplateUrl =
+      'https://docs.google.com/spreadsheets/d/1008JYJw2JpdYMP2plfEfGABnEBzNGvryx6FJE08WoP4/edit?usp=sharing';
 
   const AppSettings({
     this.playerName = 'Me',
@@ -121,6 +125,7 @@ class AppSettings {
     this.selectedFolder,
     this.selectedSheet,
     this.sheetsId,
+    this.templateUrl = defaultTemplateUrl,
   });
 
   AppSettings copyWith({
@@ -140,6 +145,7 @@ class AppSettings {
     bool clearSelectedSheet = false,
     String? sheetsId,
     bool clearSheetsId = false,
+    String? templateUrl,
   }) => AppSettings(
     playerName: playerName ?? this.playerName,
     formatPreset: formatPreset ?? this.formatPreset,
@@ -153,5 +159,6 @@ class AppSettings {
     selectedFolder: clearSelectedFolder ? null : (selectedFolder ?? this.selectedFolder),
     selectedSheet: clearSelectedSheet ? null : (selectedSheet ?? this.selectedSheet),
     sheetsId: clearSheetsId ? null : (sheetsId ?? this.sheetsId),
+    templateUrl: templateUrl ?? this.templateUrl,
   );
 }

@@ -1,7 +1,7 @@
 name: tennis_logger
 description: Tennis point logging app with Material You design.
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.1.0+2
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -9,19 +9,27 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  intl: ^0.19.0
+  intl: ^0.20.2
   shared_preferences: ^2.3.0
-  csv: ^6.0.0
-  share_plus: ^10.0.0
+  csv: ^8.0.0
+  share_plus: ^13.1.0
   path_provider: ^2.1.0
-  google_sign_in: ^6.2.1
-  googleapis: ^13.1.0
-  extension_google_sign_in_as_googleapis_auth: ^2.0.12
+  google_sign_in: ^7.2.0
+  googleapis: ^16.0.0
+  extension_google_sign_in_as_googleapis_auth: ^3.0.0
+  firebase_core: ^3.10.1
+  firebase_crashlytics: ^4.3.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^4.0.0
+  integration_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  patrol: ^4.0.0
 
 flutter:
   uses-material-design: true
+
+patrol:
+  test_directory: integration_test

@@ -32,13 +32,18 @@ For every point, you tap one chip per question (Yes / No / unknown):
 ```
 .
 ├── android/              # Android native project
+├── integration_test/     # E2E integration tests (patrol + UIAutomator2)
+│   ├── e2e_match_flow_test.dart
+│   └── helpers/
+│       └── sheets_verifier.dart
 ├── lib/
 │   ├── main.dart         # App shell + navigation
 │   ├── theme.dart        # Material You color tokens
 │   ├── models/           # TennisPoint, MatchFormat, AppSettings
-│   ├── services/         # Score engine
+│   ├── services/         # Score engine, Google auth/Sheets
 │   ├── screens/          # Setup, Entry, History, Settings
 │   └── widgets/          # ScoreBanner, TriChip, ExportSheet, …
+├── test/                 # Unit and widget tests
 ├── pubspec.yaml
 └── .github/workflows/    # CI: analyze, test, build APK
 ```
@@ -91,6 +96,54 @@ Hot reload (`r`) and hot restart (`R`) work in the running terminal.
 flutter analyze
 flutter test
 ```
+
+### Integration / E2E test
+
+`integration_test/e2e_match_flow_test.dart` is a full end-to-end test that:
+
+1. Launches the app on an Android emulator.
+2. Signs in to a real Google account (handles the native Credential Manager sheet via UIAutomator2).
+3. Creates a new spreadsheet in a specified Drive folder.
+4. Starts a match, logs a point (you serve, you win).
+5. Reads the Google Sheets doc and asserts the row was written correctly.
+6. Navigates back to that point and edits it (you lose).
+7. Re-reads the sheet and asserts the row was updated.
+
+#### Prerequisites
+
+| Requirement | Details |
+|---|---|
+| **Flutter SDK** | 3.16+ (same as the rest of the project) |
+| **patrol CLI** | A patched patrol CLI is required. See `integration_test/e2e_match_flow_test.dart` for the exact run command. |
+| **Android emulator** | Pixel 7 Pro AVD recommended; API 34+ for Credential Manager |
+| **Google account in the emulator** | Open the emulator → Settings → Accounts → Add Account → Google, and sign in to the test account once. patrol will tap that account in the native Credential Manager sheet during the test. |
+| **Google Cloud credentials** | The app must already be registered in Google Cloud Console with your OAuth client ID wired up — follow the [Google sync setup](#google-sync-setup) section above. The test account must also be listed as a **Test user** on the OAuth consent screen while the app is unpublished. |
+| **A `test_folder` in Google Drive** | The test account's Drive must contain a folder matching the name you pass in `TEST_FOLDER_NAME` (default: `test_folder`). The test will create a new spreadsheet inside it. |
+
+#### Running the test
+
+Boot your Pixel 7 Pro AVD, then run:
+
+```bash
+dart run "C:/Users/marko/patrol_cli_patched/bin/main.dart" test \
+  -t integration_test/e2e_match_flow_test.dart \
+  --device emulator-5554 \
+  --dart-define=TEST_ACCOUNT_EMAIL=<your@gmail.com> \
+  --dart-define=TEST_FOLDER_NAME=test_folder
+```
+
+| `--dart-define` | Description |
+|---|---|
+| `TEST_ACCOUNT_EMAIL` | The Gmail address to tap in the Credential Manager sheet. **Required.** |
+| `TEST_FOLDER_NAME` | The Drive folder to create the spreadsheet in. Defaults to `test_folder`. |
+
+> **Tip:** If patrol can't find the emulator automatically, first run `adb devices` to confirm the device ID and replace `emulator-5554` accordingly.
+
+#### How the Google Sign-In step works
+
+The `google_sign_in` package (v7+) uses Android's Credential Manager API, which opens a **native** bottom sheet outside the Flutter widget tree. patrol bridges this gap by running UIAutomator2 alongside the Flutter test, locating the account row by its text (your email), and tapping it. A "Continue" confirmation tap is also attempted in case Android shows one.
+
+This is the only step that relies on native automation — every other interaction (chip taps, navigation, sheet verification) runs in pure Dart via the `integration_test` package.
 
 ## Deploying to Android
 
