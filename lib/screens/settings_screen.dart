@@ -477,11 +477,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           // About
           const _SectionTitle('About'),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(20, 14, 20, 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Text('Tennis Logger v1.0.0',
                   style: TextStyle(fontSize: 13, color: AppColors.onSurfaceVar)),
                 SizedBox(height: 4),
@@ -556,9 +556,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           style: const TextStyle(fontSize: 11, color: AppColors.onSurfaceVar,
                             fontFamily: 'monospace')),
                         const SizedBox(height: 8),
-                        Wrap(
+                        const Wrap(
                           spacing: 6,
-                          children: const [
+                          children: [
                             _Pill('Logger tab ✓'),
                             _Pill('LoggerData ✓'),
                           ],
@@ -605,8 +605,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     style: BorderStyle.solid,
                   ),
                 ),
-                child: Row(
-                  children: const [
+                child: const Row(
+                  children: [
                     Text('📋', style: TextStyle(fontSize: 22)),
                     SizedBox(width: 12),
                     Expanded(

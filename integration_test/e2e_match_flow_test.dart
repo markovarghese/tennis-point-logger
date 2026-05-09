@@ -85,7 +85,9 @@ void main() {
       await $(find.text(_testFolderName)).tap();
       await $.pumpAndSettle();
 
-      // Wait until the status container shows "✓ Ready".
+      // Scroll sheet_status into view (it renders below the folder picker),
+      // then wait for the sheet creation to complete.
+      await $(find.byKey(const Key('sheet_status'))).scrollTo();
       await $(find.byKey(const Key('sheet_status')))
           .$(find.text('✓ Ready'))
           .waitUntilVisible(timeout: const Duration(seconds: 60));

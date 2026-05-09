@@ -53,7 +53,7 @@ ScoreState calcScore(List<TennisPoint> points, MatchFormat fmt) {
   }
 
   void winGame(bool iWon) {
-    if (iWon) myGames++; else oppGames++;
+    if (iWon) { myGames++; } else { oppGames++; }
     myPts = 0;
     oppPts = 0;
 
@@ -61,7 +61,7 @@ ScoreState calcScore(List<TennisPoint> points, MatchFormat fmt) {
     final oppWonSet = oppGames >= fmt.gamesPerSet && oppGames - myGames >= 2;
 
     if (myWonSet || oppWonSet) {
-      if (myWonSet) mySets++; else oppSets++;
+      if (myWonSet) { mySets++; } else { oppSets++; }
       myGames = 0;
       oppGames = 0;
       inTiebreak = false;
@@ -81,7 +81,7 @@ ScoreState calcScore(List<TennisPoint> points, MatchFormat fmt) {
                  (p.myServe != true && p.serverWon == false);
 
     if (inFinalTb) {
-      if (iWon) myPts++; else oppPts++;
+      if (iWon) { myPts++; } else { oppPts++; }
       final tbTarget = fmt.finalSet == FinalSetType.sixPointTb ? 6 : 10;
       if (myPts >= tbTarget && myPts - oppPts >= 2) {
         mySets++;
@@ -93,7 +93,7 @@ ScoreState calcScore(List<TennisPoint> points, MatchFormat fmt) {
         inFinalTb = false;
       }
     } else if (inTiebreak) {
-      if (iWon) myPts++; else oppPts++;
+      if (iWon) { myPts++; } else { oppPts++; }
       final tbTarget = fmt.tiebreakPoints;
       if (myPts >= tbTarget && myPts - oppPts >= 2) {
         winGame(true);
@@ -101,7 +101,7 @@ ScoreState calcScore(List<TennisPoint> points, MatchFormat fmt) {
         winGame(false);
       }
     } else if (!fmt.adScoring) {
-      if (iWon) myPts++; else oppPts++;
+      if (iWon) { myPts++; } else { oppPts++; }
       if (myPts >= 4 && myPts > oppPts) {
         winGame(true);
       } else if (oppPts >= 4 && oppPts > myPts) {
@@ -111,7 +111,7 @@ ScoreState calcScore(List<TennisPoint> points, MatchFormat fmt) {
         // Already tracked; whichever gets to 4 first wins
       }
     } else {
-      if (iWon) myPts++; else oppPts++;
+      if (iWon) { myPts++; } else { oppPts++; }
       if (myPts >= 4 && myPts - oppPts >= 2) {
         winGame(true);
       } else if (oppPts >= 4 && oppPts - myPts >= 2) {
