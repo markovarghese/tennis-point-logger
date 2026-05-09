@@ -148,6 +148,16 @@ This is the only step that relies on native automation — every other interacti
 
 The repo already contains a working `android/` project.
 
+### 0. Sideload a pre-built APK (quickest — no build required)
+
+Every release publishes a signed APK to [GitHub Releases](https://github.com/markovarghese/tennis-point-logger/releases). To install it on an Android phone:
+
+1. On the phone, go to **Settings → Apps → Special app access → Install unknown apps** and allow your browser or file manager.
+2. Download the latest `tennis-point-logger-vX.Y.Z.apk` from the [Releases page](https://github.com/markovarghese/tennis-point-logger/releases) directly on the phone (or transfer it from your computer via USB / AirDrop).
+3. Tap the downloaded file and follow the install prompt.
+
+> **Tip:** You can also paste the direct download URL into the phone's browser — look for the `.apk` asset under the latest release.
+
 ### 1. Debug install (development)
 
 Connect a phone with USB debugging enabled (or boot an emulator) and run:
