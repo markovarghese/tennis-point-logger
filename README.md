@@ -1,6 +1,22 @@
-# Tennis Point Logger
+<p align="center">
+  <img src="assets/icon/app_icon.svg" alt="Tennis Point Logger logo" width="140" height="140" />
+</p>
 
-A mobile app for rapid point-by-point tennis match data entry, built with Flutter and Material You (Material Design 3).
+<h1 align="center">Tennis Point Logger</h1>
+
+<p align="center">
+  <a href="https://github.com/markovarghese/tennis-point-logger/actions/workflows/build.yml">
+    <img src="https://github.com/markovarghese/tennis-point-logger/actions/workflows/build.yml/badge.svg" alt="Build" />
+  </a>
+  <a href="https://github.com/markovarghese/tennis-point-logger/actions/workflows/codeql.yml">
+    <img src="https://github.com/markovarghese/tennis-point-logger/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" />
+  </a>
+  <a href="https://github.com/markovarghese/tennis-point-logger/releases/latest">
+    <img src="https://img.shields.io/github/v/release/markovarghese/tennis-point-logger" alt="Latest release" />
+  </a>
+</p>
+
+<p align="center">A mobile app for rapid point-by-point tennis match data entry, built with Flutter and Material You (Material Design 3).</p>
 
 
 ## What it does
