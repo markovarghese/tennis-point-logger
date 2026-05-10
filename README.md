@@ -51,6 +51,46 @@ For every point, you tap one chip per question (Yes / No / unknown):
 - **Export** — copy as CSV, save to device, or sync to Google Sheets (see below)
 - **Google Sheets sync** — sign in with Google, pick a Drive folder for a new spreadsheet *or* an existing sheet, and choose your sync cadence (after every point, on match end, or offline-only)
 
+## How to use
+
+### 1. Before the match — Settings screen
+
+1. Open the app and go to the **Settings** tab.
+2. Tap **Sign in with Google** and authenticate with your Google account.
+3. Choose where match data gets saved:
+   - **New spreadsheet** — pick a Google Drive folder; the app creates a new Sheets doc for this match.
+   - **Existing spreadsheet** — pick a Sheets doc previously created by this app; the next match's points get appended to the end of its `LoggerData` table.
+4. Select the correct **USTA level** preset and adjust any format settings (number of sets, games per set, tiebreak rules) as needed.
+
+### 2. Match setup — Match screen
+
+1. Switch to the **Match** tab.
+2. Enter your **opponent's name**.
+3. Tap **Start Match**.
+
+### 3. During the match — logging each point
+
+For every point played, set the following toggles **before** tapping **Next Point**:
+
+| Toggle | When to set |
+|---|---|
+| **My Serve?** | On if you are serving; off if your opponent is serving |
+| **Server's First Serve?** | Leave on (default). Turn **off** if the server faulted on the first serve |
+| **Server Won?** | On if the server won the point; off if the returner won |
+| **Server Double Fault?** | On if the point ended on a double fault (also set **Server Won?** to off) |
+| **Loser's Forced Error?** | On if the winner forced the loser into the error; off if the loser erred unforced |
+| **Loser's Forehand?** | On if the loser's last shot was a forehand; off if it was a backhand |
+
+Once all toggles reflect what happened on the court, tap **Next Point** to save the point and advance.
+
+### 4. Correcting a point
+
+Tap the **<** button to step back to the previous point and edit it. All changes propagate through the score engine immediately.
+
+### 5. Correcting the score after a break
+
+If you paused point-taking and the in-app score drifted from the real score, tap the **score panel** at the top of the Match screen to manually set the current score.
+
 ## Project layout
 
 ```
