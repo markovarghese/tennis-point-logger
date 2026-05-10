@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/point.dart';
 import '../models/match_settings.dart';
-import '../services/score_engine.dart';
+import '../models/score_state.dart';
 import '../theme.dart';
 import '../widgets/tri_chip.dart';
 import '../widgets/score_banner.dart';
@@ -10,6 +10,7 @@ import '../widgets/score_override_sheet.dart';
 class EntryScreen extends StatefulWidget {
   final List<TennisPoint> points;
   final TennisPoint currentPoint;
+  final ScoreState matchStartScore;
   final String opponentName;
   final MatchFormat format;
   final GsState gsState;
@@ -19,13 +20,13 @@ class EntryScreen extends StatefulWidget {
   final VoidCallback onBackToSetup;
   final VoidCallback onExport;
   final void Function(TennisPoint edited) onEditPoint;
-  final ScoreOverride? scoreOverride;
-  final void Function(ScoreOverride?) onScoreOverride;
+  final void Function(ScoreOverride override, int? viewIdx) onScoreOverride;
 
   const EntryScreen({
     super.key,
     required this.points,
     required this.currentPoint,
+    required this.matchStartScore,
     required this.opponentName,
     required this.format,
     required this.gsState,
@@ -35,7 +36,6 @@ class EntryScreen extends StatefulWidget {
     required this.onBackToSetup,
     required this.onExport,
     required this.onEditPoint,
-    required this.scoreOverride,
     required this.onScoreOverride,
   });
 
@@ -44,7 +44,7 @@ class EntryScreen extends StatefulWidget {
 }
 
 class _EntryScreenState extends State<EntryScreen> {
-  // null = current new point; index = editing past point
+  // null = current new point; non-null = viewing a saved point by index
   int? _viewIdx;
   bool _autoSaveFlash = false;
 
@@ -53,16 +53,13 @@ class _EntryScreenState extends State<EntryScreen> {
   TennisPoint get _displayPoint =>
       _isNew ? widget.currentPoint : widget.points[_viewIdx!];
 
-  ScoreState get _calcedScore => calcScore(widget.points, widget.format);
-
-  ScoreState get _score {
-    final calc = _calcedScore;
-    if (widget.scoreOverride == null) return calc;
-    final o = widget.scoreOverride!;
-    return calc.copyWith(
-      mySets: o.mySets, oppSets: o.oppSets,
-      myGames: o.myGames, oppGames: o.oppGames,
-    );
+  ScoreState get _displayScore {
+    if (_isNew) {
+      return widget.points.isEmpty
+          ? widget.matchStartScore
+          : widget.points.last.score ?? widget.matchStartScore;
+    }
+    return widget.points[_viewIdx!].score ?? widget.matchStartScore;
   }
 
   void _goTo(int? idx) => setState(() => _viewIdx = idx);
@@ -81,8 +78,8 @@ class _EntryScreenState extends State<EntryScreen> {
   }
 
   Future<void> _openOverrideEditor() async {
-    final result = await showScoreOverrideSheet(context, widget.format, _score);
-    if (result != null) widget.onScoreOverride(result);
+    final result = await showScoreOverrideSheet(context, widget.format, _displayScore);
+    if (result != null) widget.onScoreOverride(result, _viewIdx);
   }
 
   @override
@@ -118,14 +115,15 @@ class _EntryScreenState extends State<EntryScreen> {
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 child: const Text('◀ Setup',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
               ),
               const Spacer(),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    width: 8, height: 8,
+                    width: 8,
+                    height: 8,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: synced ? const Color(0xFF34A853) : AppColors.outline,
@@ -133,7 +131,8 @@ class _EntryScreenState extends State<EntryScreen> {
                   ),
                   const SizedBox(width: 6),
                   Text(synced ? 'Synced' : 'No sync',
-                    style: const TextStyle(fontSize: 11, color: AppColors.onSurfaceVar)),
+                      style: const TextStyle(
+                          fontSize: 11, color: AppColors.onSurfaceVar)),
                 ],
               ),
               const Spacer(),
@@ -147,18 +146,17 @@ class _EntryScreenState extends State<EntryScreen> {
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 child: const Text('Export ↑',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
               ),
             ],
           ),
         ),
 
-        // Score banner
+        // Score banner — shows score after last saved point (or the edited point)
         ScoreBanner(
-          score: _score,
+          score: _displayScore,
           opponentName: widget.opponentName,
           onTap: _openOverrideEditor,
-          hasOverride: widget.scoreOverride != null,
         ),
 
         // Navigation strip
@@ -227,11 +225,16 @@ class _NavStrip extends StatelessWidget {
   final VoidCallback? onPrev, onNext, onOpenHistory;
 
   const _NavStrip({
-    required this.pointLabel, required this.timeLabel,
-    required this.isNew, required this.autoSaveFlash,
-    required this.canPrev, required this.canNext,
+    required this.pointLabel,
+    required this.timeLabel,
+    required this.isNew,
+    required this.autoSaveFlash,
+    required this.canPrev,
+    required this.canNext,
     required this.totalPoints,
-    required this.onPrev, required this.onNext, required this.onOpenHistory,
+    required this.onPrev,
+    required this.onNext,
+    required this.onOpenHistory,
   });
 
   @override
@@ -244,24 +247,28 @@ class _NavStrip extends StatelessWidget {
           _NavBtn(
             key: const Key('nav_prev'),
             onTap: onPrev,
-            child: Text('‹', style: TextStyle(
-              fontSize: 22,
-              color: canPrev ? AppColors.primary : AppColors.outlineVariant,
-            )),
+            child: Text('‹',
+                style: TextStyle(
+                  fontSize: 22,
+                  color: canPrev ? AppColors.primary : AppColors.outlineVariant,
+                )),
           ),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 6),
               child: Column(
                 children: [
-                  Text(pointLabel, style: TextStyle(
-                    fontSize: 13, fontWeight: FontWeight.w600,
-                    color: isNew ? AppColors.primary : AppColors.secondary,
-                  )),
+                  Text(pointLabel,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: isNew ? AppColors.primary : AppColors.secondary,
+                      )),
                   Text(
                     '⏱ $timeLabel${autoSaveFlash ? '  ✓ saved' : ''}',
                     style: const TextStyle(
-                      fontSize: 11, fontFamily: 'monospace',
+                      fontSize: 11,
+                      fontFamily: 'monospace',
                       color: AppColors.onSurfaceVar,
                     ),
                   ),
@@ -272,10 +279,13 @@ class _NavStrip extends StatelessWidget {
           _NavBtn(
             key: const Key('nav_next'),
             onTap: onNext,
-            child: Text('›', style: TextStyle(
-              fontSize: 22,
-              color: (canNext || !isNew) ? AppColors.primary : AppColors.outlineVariant,
-            )),
+            child: Text('›',
+                style: TextStyle(
+                  fontSize: 22,
+                  color: (canNext || !isNew)
+                      ? AppColors.primary
+                      : AppColors.outlineVariant,
+                )),
           ),
           TextButton(
             onPressed: onOpenHistory,
@@ -303,7 +313,8 @@ class _NavBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 44, height: 44,
+      width: 44,
+      height: 44,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(100),
@@ -338,7 +349,9 @@ class _EditingPill extends StatelessWidget {
                   ? '✓ Auto-saved'
                   : 'Editing point #${pointIdx + 1} — changes save instantly',
               style: const TextStyle(
-                fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.onSurface,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.onSurface,
               ),
             ),
           ),
@@ -352,7 +365,7 @@ class _EditingPill extends StatelessWidget {
               shape: const StadiumBorder(),
             ),
             child: const Text('+ New point',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -370,7 +383,10 @@ class _BottomCta extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.fromLTRB(
-        16, 10, 16, 14 + MediaQuery.of(context).padding.bottom,
+        16,
+        10,
+        16,
+        14 + MediaQuery.of(context).padding.bottom,
       ),
       decoration: const BoxDecoration(
         border: Border(top: BorderSide(color: AppColors.outlineVariant)),

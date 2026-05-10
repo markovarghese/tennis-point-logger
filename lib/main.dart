@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'services/app_log.dart';
 import 'services/google_auth_service.dart';
+import 'services/score_engine.dart';
 import 'theme.dart';
 import 'models/point.dart';
 import 'models/match_settings.dart';
@@ -21,11 +22,9 @@ void main() async {
 
   await Firebase.initializeApp();
 
-  // Pass all uncaught "fatal" errors from the framework to Crashlytics
   FlutterError.onError = (errorDetails) {
     FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
   };
-  // Pass all uncaught asynchronous errors that aren't handled by the Flutter framework to Crashlytics
   PlatformDispatcher.instance.onError = (error, stack) {
     FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
     return true;
@@ -64,7 +63,7 @@ class _AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<_AppShell> {
-  int _tab = 0; // 0 = Match, 1 = Settings
+  int _tab = 0;
   _AppScreen _screen = _AppScreen.setup;
 
   String _opponentName = '';
@@ -72,7 +71,7 @@ class _AppShellState extends State<_AppShell> {
   List<TennisPoint> _points = [];
   TennisPoint _currentPoint = TennisPoint.fresh();
   AppSettings _settings = const AppSettings();
-  ScoreOverride? _scoreOverride;
+  ScoreState _matchStartScore = const ScoreState();
 
   void _handleStart(String opponent, DateTime date) {
     AppLog.info('match: start opponent="$opponent" date=${DateFormat('d MMM yyyy').format(date)}');
@@ -80,8 +79,8 @@ class _AppShellState extends State<_AppShell> {
       _opponentName = opponent;
       _matchDate = date;
       _points = [];
-      _currentPoint = TennisPoint.fresh();
-      _scoreOverride = null;
+      _matchStartScore = ScoreState(setsToWin: _settings.format.setsToWin);
+      _currentPoint = _freshPointWithDefaults();
       _screen = _AppScreen.entry;
     });
   }
@@ -93,13 +92,72 @@ class _AppShellState extends State<_AppShell> {
   }
 
   void _handleNext() {
-    final point = _currentPoint;
+    final pointToSave = TennisPoint(
+      id: _currentPoint.id,
+      createdAt: _currentPoint.createdAt,
+      myServe: _currentPoint.myServe,
+      firstServe: _currentPoint.firstServe,
+      doubleFault: _currentPoint.doubleFault,
+      serverWon: _currentPoint.serverWon,
+      forcedError: _currentPoint.forcedError,
+      loserForehand: _currentPoint.loserForehand,
+      score: nextScore(_prevScore, _currentPoint, _settings.format),
+    );
     setState(() {
-      _points = [..._points, point];
-      _currentPoint = TennisPoint.fresh();
+      _points = [..._points, pointToSave];
+      _currentPoint = _freshPointWithDefaults();
     });
     AppLog.info('match: point #${_points.length} logged');
-    _autoSync(point);
+    _autoSync(pointToSave);
+  }
+
+  ScoreState get _prevScore =>
+      _points.isEmpty ? _matchStartScore : (_points.last.score ?? _matchStartScore);
+
+  void _recomputeScoresFrom(int startIdx) {
+    var prev = startIdx == 0
+        ? _matchStartScore
+        : (_points[startIdx - 1].score ?? _matchStartScore);
+    for (var i = startIdx; i < _points.length; i++) {
+      final s = nextScore(prev, _points[i], _settings.format);
+      _points[i] = _points[i].withScore(s);
+      prev = s;
+    }
+  }
+
+  TennisPoint _freshPointWithDefaults() {
+    final now = DateTime.now();
+    final myServe = _computeMyServeDefault();
+    return TennisPoint(
+      id: '${now.millisecondsSinceEpoch}_${now.microsecond}',
+      createdAt: now,
+      myServe: myServe,
+      firstServe: true,
+      doubleFault: false,
+      serverWon: myServe == null ? null : !myServe,
+      forcedError: false,
+      loserForehand: true,
+    );
+  }
+
+  bool? _computeMyServeDefault() {
+    final prev = _prevScore;
+    if (prev.isTiebreak) return null;
+    if (prev.ptScore == '0-0') {
+      // Start of a new game: find who served the previous game and flip.
+      for (var i = _points.length - 1; i >= 0; i--) {
+        if (_points[i].serverWon != null) {
+          final ms = _points[i].myServe;
+          return ms == null ? null : !ms;
+        }
+      }
+      return null;
+    }
+    // Mid-game: inherit from the most recent effective point.
+    for (var i = _points.length - 1; i >= 0; i--) {
+      if (_points[i].serverWon != null) return _points[i].myServe;
+    }
+    return null;
   }
 
   Future<void> _autoSync(TennisPoint point, {int? index}) async {
@@ -114,7 +172,6 @@ class _AppShellState extends State<_AppShell> {
     try {
       if (s.sheetMode == SheetMode.existing && s.selectedSheet != null) {
         if (isUpdate) {
-          // For existing sheets, we don't know the starting row easily without more tracking.
           AppLog.info('sync: update skipped for existing sheet');
         } else {
           await GoogleAuthService.instance.appendToSheet(
@@ -126,7 +183,7 @@ class _AppShellState extends State<_AppShell> {
         }
       } else if (s.sheetMode == SheetMode.create && s.sheetsId != null) {
         if (isUpdate) {
-          final rowNum = index + 2; // Point 0 is row 2 in template
+          final rowNum = index + 2;
           await GoogleAuthService.instance.updateRow(s.sheetsId!, 'Logger!A$rowNum', row);
           AppLog.info('sync: ok (update) → logger sheet row $rowNum');
         } else {
@@ -145,14 +202,58 @@ class _AppShellState extends State<_AppShell> {
       AppLog.info('match: point #${idx + 1} edited');
       setState(() {
         _points[idx] = edited;
+        _recomputeScoresFrom(idx);
       });
-      _autoSync(edited, index: idx);
+      _autoSync(_points[idx], index: idx);
     } else {
       AppLog.info('match: point edited (unknown index)');
       setState(() {
-        _points = _points.map((p) => p.id == edited.id ? edited : p).toList();
+        final i = _points.indexWhere((p) => p.id == edited.id);
+        if (i != -1) {
+          _points[i] = edited;
+          _recomputeScoresFrom(i);
+        }
       });
     }
+  }
+
+  void _handleScoreOverride(ScoreOverride override, int? viewIdx) {
+    setState(() {
+      final applied = _applyOverride(override);
+      if (viewIdx == null) {
+        if (_points.isEmpty) {
+          _matchStartScore = applied;
+        } else {
+          _points[_points.length - 1] = _points.last.withScore(applied);
+        }
+      } else {
+        _points[viewIdx] = _points[viewIdx].withScore(applied);
+        _recomputeScoresFrom(viewIdx + 1);
+      }
+    });
+  }
+
+  ScoreState _applyOverride(ScoreOverride o) {
+    final fmt = _settings.format;
+    final inFinalSet = (o.mySets + o.oppSets) == fmt.setsInMatch - 1;
+    final atTb = fmt.tiebreakPoints > 0 &&
+        o.myGames == fmt.gamesPerSet &&
+        o.oppGames == fmt.gamesPerSet;
+    final inFinalTb = atTb && inFinalSet && fmt.finalSet != FinalSetType.full;
+    final inTiebreak = atTb && !inFinalTb;
+    return ScoreState(
+      mySets: o.mySets,
+      oppSets: o.oppSets,
+      myGames: o.myGames,
+      oppGames: o.oppGames,
+      myPts: 0,
+      oppPts: 0,
+      ptScore: '0-0',
+      isTiebreak: inTiebreak || inFinalTb,
+      inFinalTb: inFinalTb,
+      matchOver: o.mySets >= fmt.setsToWin || o.oppSets >= fmt.setsToWin,
+      setsToWin: _matchStartScore.setsToWin,
+    );
   }
 
   @override
@@ -179,7 +280,6 @@ class _AppShellState extends State<_AppShell> {
   }
 
   Widget _buildBody() {
-    // History screen covers entire area
     if (_screen == _AppScreen.history) {
       return HistoryScreen(
         points: _points,
@@ -189,7 +289,6 @@ class _AppShellState extends State<_AppShell> {
       );
     }
 
-    // Settings tab
     if (_tab == 1) {
       return SettingsScreen(
         settings: _settings,
@@ -197,18 +296,18 @@ class _AppShellState extends State<_AppShell> {
       );
     }
 
-    // Match tab
     return switch (_screen) {
       _AppScreen.setup => SetupScreen(onStart: _handleStart),
-      _AppScreen.entry => _entryWithFab(),
+      _AppScreen.entry => _entryWidget(),
       _ => SetupScreen(onStart: _handleStart),
     };
   }
 
-  Widget _entryWithFab() {
+  Widget _entryWidget() {
     return EntryScreen(
       points: _points,
       currentPoint: _currentPoint,
+      matchStartScore: _matchStartScore,
       opponentName: _opponentName,
       format: _settings.format,
       gsState: _settings.gsState,
@@ -216,12 +315,9 @@ class _AppShellState extends State<_AppShell> {
       onNext: _handleNext,
       onOpenHistory: () => setState(() => _screen = _AppScreen.history),
       onBackToSetup: () => setState(() => _screen = _AppScreen.setup),
-      onExport: () => showExportSheet(
-        context, _points, _opponentName, _matchDate,
-      ),
+      onExport: () => showExportSheet(context, _points, _opponentName, _matchDate),
       onEditPoint: _handleEditPoint,
-      scoreOverride: _scoreOverride,
-      onScoreOverride: (o) => setState(() => _scoreOverride = o),
+      onScoreOverride: _handleScoreOverride,
     );
   }
 }

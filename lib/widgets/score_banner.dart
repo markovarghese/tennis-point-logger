@@ -6,14 +6,12 @@ class ScoreBanner extends StatelessWidget {
   final ScoreState score;
   final String opponentName;
   final VoidCallback? onTap;
-  final bool hasOverride;
 
   const ScoreBanner({
     super.key,
     required this.score,
     required this.opponentName,
     this.onTap,
-    this.hasOverride = false,
   });
 
   Color get _bg {
@@ -91,25 +89,6 @@ class ScoreBanner extends StatelessWidget {
               ],
             ),
 
-            if (hasOverride)
-              Positioned(
-                top: 0,
-                right: 0,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(64),
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                  child: const Text(
-                    'OVERRIDE',
-                    style: TextStyle(
-                      fontSize: 9, fontWeight: FontWeight.w700,
-                      color: Colors.white, letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-              ),
           ],
         ),
       ),
