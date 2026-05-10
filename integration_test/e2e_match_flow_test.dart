@@ -34,7 +34,7 @@ const _testFolderName =
 
 void main() {
   patrolTest(
-    'log point → verify Sheets → edit point → re-verify',
+    'log point → verify score & Sheets → open history → edit → re-verify score & Sheets',
     config: const PatrolTesterConfig(
       visibleTimeout: Duration(seconds: 45),
       settleTimeout: Duration(seconds: 10),
@@ -128,6 +128,16 @@ void main() {
         expectedServerWon: true,
       );
 
+      // ── Checkpoint A: score banner and history after point 1 ──────────────
+      // myServe=T, serverWon=T → server (me) wins → score advances to 15-0.
+      await $(find.text('15-0')).waitUntilVisible();
+
+      await $(find.text('All (1)')).tap();
+      await $.pumpAndSettle();
+      await $(find.text('0-0  0-0  15-0')).waitUntilVisible();
+      await $(find.text('← Back to Entry')).tap();
+      await $.pumpAndSettle();
+
       // ── Step 8: Navigate back to point 1 to edit it ───────────────────────
       // After tapping "Next Point →" we are now on new point #2.
       // Tap ‹ to navigate to point #1.
@@ -152,6 +162,14 @@ void main() {
         expectedMyServe: true,
         expectedServerWon: false,
       );
+
+      // ── Checkpoint B: score recomputed in history after edit ──────────────
+      // myServe=T, serverWon=F → server (me) loses → score is 0-15.
+      await $(find.text('All (1)')).tap();
+      await $.pumpAndSettle();
+      await $(find.text('0-0  0-0  0-15')).waitUntilVisible();
+      await $(find.text('← Back to Entry')).tap();
+      await $.pumpAndSettle();
     },
   );
 }
