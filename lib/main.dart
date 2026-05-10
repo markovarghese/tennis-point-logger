@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'services/app_log.dart';
 import 'services/google_auth_service.dart';
+import 'services/score_engine.dart';
 import 'theme.dart';
 import 'models/point.dart';
 import 'models/match_settings.dart';
@@ -80,7 +81,7 @@ class _AppShellState extends State<_AppShell> {
       _opponentName = opponent;
       _matchDate = date;
       _points = [];
-      _currentPoint = TennisPoint.fresh();
+      _currentPoint = _freshPointWithDefaults();
       _scoreOverride = null;
       _screen = _AppScreen.entry;
     });
@@ -92,11 +93,54 @@ class _AppShellState extends State<_AppShell> {
     });
   }
 
+  TennisPoint _freshPointWithDefaults() {
+    final now = DateTime.now();
+    final myServe = _computeMyServeDefault();
+    return TennisPoint(
+      id: '${now.millisecondsSinceEpoch}_${now.microsecond}',
+      createdAt: now,
+      myServe: myServe,
+      firstServe: true,
+      doubleFault: false,
+      serverWon: myServe == null ? null : !myServe,
+      forcedError: false,
+      loserForehand: true,
+    );
+  }
+
+  bool? _computeMyServeDefault() {
+    final score = calcScore(_points, _settings.format);
+    if (score.isTiebreak) return null;
+    if (score.ptScore == '0-0') {
+      final prev = _lastPointOfPreviousGame();
+      if (prev?.myServe == null) return null;
+      return !prev!.myServe!;
+    }
+    return _points.isNotEmpty ? _points.last.myServe : null;
+  }
+
+  TennisPoint? _lastPointOfPreviousGame() {
+    int lastGameEndIdx = -1;
+    int prevMyGames = 0, prevOppGames = 0, prevMySets = 0, prevOppSets = 0;
+    for (int i = 0; i < _points.length; i++) {
+      final s = calcScore(_points.sublist(0, i + 1), _settings.format);
+      if (s.myGames + s.oppGames != prevMyGames + prevOppGames ||
+          s.mySets + s.oppSets != prevMySets + prevOppSets) {
+        lastGameEndIdx = i;
+        prevMyGames = s.myGames;
+        prevOppGames = s.oppGames;
+        prevMySets = s.mySets;
+        prevOppSets = s.oppSets;
+      }
+    }
+    return lastGameEndIdx >= 0 ? _points[lastGameEndIdx] : null;
+  }
+
   void _handleNext() {
     final point = _currentPoint;
     setState(() {
       _points = [..._points, point];
-      _currentPoint = TennisPoint.fresh();
+      _currentPoint = _freshPointWithDefaults();
     });
     AppLog.info('match: point #${_points.length} logged');
     _autoSync(point);
