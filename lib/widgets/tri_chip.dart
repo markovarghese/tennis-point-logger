@@ -6,6 +6,7 @@ class TriChip extends StatelessWidget {
   final String label;
   final ValueChanged<bool?> onChange;
   final bool compact;
+  final bool triState;
 
   const TriChip({
     super.key,
@@ -13,10 +14,14 @@ class TriChip extends StatelessWidget {
     required this.label,
     required this.onChange,
     this.compact = false,
+    this.triState = true,
   });
 
-  // Cycles null → true → false → null
-  bool? get _next => value == null ? true : value == true ? false : null;
+  // triState=true: cycles null → true → false → null
+  // triState=false: cycles true → false → true (no null)
+  bool? get _next => triState
+      ? (value == null ? true : value == true ? false : null)
+      : (value == true ? false : true);
 
   Color get _bg => value == null
       ? AppColors.chipNull

@@ -4,22 +4,22 @@ class TennisPoint {
   final String id;
   final DateTime createdAt;
   bool? myServe;
-  bool? firstServe;
-  bool? doubleFault;
+  bool firstServe;
+  bool doubleFault;
   bool? serverWon;
-  bool? forcedError;
-  bool? loserForehand;
+  bool forcedError;
+  bool loserForehand;
   ScoreState? score;
 
   TennisPoint({
     required this.id,
     required this.createdAt,
     this.myServe,
-    this.firstServe,
-    this.doubleFault,
+    this.firstServe = true,
+    this.doubleFault = false,
     this.serverWon,
-    this.forcedError,
-    this.loserForehand,
+    this.forcedError = false,
+    this.loserForehand = true,
     this.score,
   });
 
@@ -45,21 +45,21 @@ class TennisPoint {
 
   TennisPoint copyWith({
     bool? Function()? myServe,
-    bool? Function()? firstServe,
-    bool? Function()? doubleFault,
+    bool? firstServe,
+    bool? doubleFault,
     bool? Function()? serverWon,
-    bool? Function()? forcedError,
-    bool? Function()? loserForehand,
+    bool? forcedError,
+    bool? loserForehand,
   }) {
     return TennisPoint(
       id: id,
       createdAt: createdAt,
       myServe: myServe != null ? myServe() : this.myServe,
-      firstServe: firstServe != null ? firstServe() : this.firstServe,
-      doubleFault: doubleFault != null ? doubleFault() : this.doubleFault,
+      firstServe: firstServe ?? this.firstServe,
+      doubleFault: doubleFault ?? this.doubleFault,
       serverWon: serverWon != null ? serverWon() : this.serverWon,
-      forcedError: forcedError != null ? forcedError() : this.forcedError,
-      loserForehand: loserForehand != null ? loserForehand() : this.loserForehand,
+      forcedError: forcedError ?? this.forcedError,
+      loserForehand: loserForehand ?? this.loserForehand,
       score: score,
     );
   }
@@ -69,11 +69,11 @@ class TennisPoint {
       id: id,
       createdAt: createdAt,
       myServe: key == 'myServe' ? value : myServe,
-      firstServe: key == 'firstServe' ? value : firstServe,
-      doubleFault: key == 'doubleFault' ? value : doubleFault,
+      firstServe: key == 'firstServe' ? value! : firstServe,
+      doubleFault: key == 'doubleFault' ? value! : doubleFault,
       serverWon: key == 'serverWon' ? value : serverWon,
-      forcedError: key == 'forcedError' ? value : forcedError,
-      loserForehand: key == 'loserForehand' ? value : loserForehand,
+      forcedError: key == 'forcedError' ? value! : forcedError,
+      loserForehand: key == 'loserForehand' ? value! : loserForehand,
       score: score,
     );
   }

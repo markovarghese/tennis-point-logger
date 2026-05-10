@@ -43,6 +43,8 @@ class EntryScreen extends StatefulWidget {
   State<EntryScreen> createState() => _EntryScreenState();
 }
 
+const _binaryFields = {'firstServe', 'doubleFault', 'forcedError', 'loserForehand'};
+
 class _EntryScreenState extends State<EntryScreen> {
   // null = current new point; non-null = viewing a saved point by index
   int? _viewIdx;
@@ -198,6 +200,7 @@ class _EntryScreenState extends State<EntryScreen> {
                 value: getField(_displayPoint, f.key),
                 label: f.label,
                 onChange: (v) => _handleChipChange(f.key, v),
+                triState: !_binaryFields.contains(f.key),
               );
             },
           ),
