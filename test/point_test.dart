@@ -77,16 +77,16 @@ void main() {
       final p = TennisPoint(
         id: 'x', createdAt: dt,
         myServe: true, firstServe: false,
-        doubleFault: null, serverWon: true,
-        forcedError: false, loserForehand: null,
+        doubleFault: false, serverWon: true,
+        forcedError: false, loserForehand: false,
       );
       final row = p.toCsvRow('2024-06-15', 'Opp');
-      expect(row[3], 'TRUE');  // myServe
+      expect(row[3], 'TRUE');   // myServe
       expect(row[4], 'FALSE');  // firstServe
-      expect(row[5], '');   // doubleFault null
-      expect(row[6], 'TRUE');  // serverWon
+      expect(row[5], 'FALSE');  // doubleFault
+      expect(row[6], 'TRUE');   // serverWon
       expect(row[7], 'FALSE');  // forcedError
-      expect(row[8], '');   // loserForehand null
+      expect(row[8], 'FALSE');  // loserForehand
     });
   });
 }

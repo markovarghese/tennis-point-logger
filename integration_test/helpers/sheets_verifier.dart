@@ -39,6 +39,18 @@ class SheetsVerifier {
     return row;
   }
 
+  /// Asserts that the 4 stat columns in [rowNumber] are never blank.
+  /// firstServe(E=4), doubleFault(F=5), forcedError(H=7), loserForehand(I=8)
+  /// must always be TRUE or FALSE — never an empty string.
+  static Future<void> assertStatFieldsNonBlank(
+      String spreadsheetId, int rowNumber) async {
+    final row = await readLoggerRow(spreadsheetId, rowNumber);
+    for (final col in [4, 5, 7, 8]) {
+      expect(row[col], isNot(''),
+          reason: 'stat field col $col in row $rowNumber must not be blank');
+    }
+  }
+
   /// Asserts that the first data row (row 2) of [spreadsheetId] has
   /// myServe=[expectedMyServe] and serverWon=[expectedServerWon].
   static Future<void> assertPoint1(

@@ -106,6 +106,78 @@ void main() {
       await $(find.byKey(const Key('start_match_button'))).tap();
       await $.pumpAndSettle();
 
+      // ── Step 4b: stat chips never show '—' on a fresh point ───────────────
+      // firstServe/doubleFault/forcedError/loserForehand are bool (non-nullable)
+      // so the null/dash state is unreachable for these chips.
+      for (final key in [
+        'chip_firstServe',
+        'chip_doubleFault',
+        'chip_forcedError',
+        'chip_loserForehand',
+      ]) {
+        expect(
+          find.descendant(of: find.byKey(Key(key)), matching: find.text('—')),
+          findsNothing,
+          reason: '$key must never show null dash',
+        );
+      }
+
+      // ── Step 4c: 2-state toggle on all 4 stat chips ───────────────────────
+      // Defaults: firstServe=✓  doubleFault=✗  forcedError=✗  loserForehand=✓
+      const statChipCycles = [
+        ('chip_firstServe', '✓', '✗'),
+        ('chip_doubleFault', '✗', '✓'),
+        ('chip_forcedError', '✗', '✓'),
+        ('chip_loserForehand', '✓', '✗'),
+      ];
+      for (final (key, defaultMark, altMark) in statChipCycles) {
+        await $(find.byKey(Key(key))).tap();
+        await $.pumpAndSettle();
+        expect(
+          find.descendant(of: find.byKey(Key(key)), matching: find.text(altMark)),
+          findsOneWidget,
+          reason: '$key: after 1 tap should show $altMark',
+        );
+        await $(find.byKey(Key(key))).tap();
+        await $.pumpAndSettle();
+        expect(
+          find.descendant(of: find.byKey(Key(key)), matching: find.text(defaultMark)),
+          findsOneWidget,
+          reason: '$key: after 2 taps should show $defaultMark',
+        );
+      }
+
+      // ── Step 4d: tri-state chips still cycle null → ✓ → ✗ → null ─────────
+      for (final key in ['chip_myServe', 'chip_serverWon']) {
+        expect(
+          find.descendant(of: find.byKey(Key(key)), matching: find.text('—')),
+          findsOneWidget,
+          reason: '$key should start as null (—)',
+        );
+        await $(find.byKey(Key(key))).tap();
+        await $.pumpAndSettle();
+        expect(
+          find.descendant(of: find.byKey(Key(key)), matching: find.text('✓')),
+          findsOneWidget,
+          reason: '$key: 1 tap → true (✓)',
+        );
+        await $(find.byKey(Key(key))).tap();
+        await $.pumpAndSettle();
+        expect(
+          find.descendant(of: find.byKey(Key(key)), matching: find.text('✗')),
+          findsOneWidget,
+          reason: '$key: 2 taps → false (✗)',
+        );
+        await $(find.byKey(Key(key))).tap();
+        await $.pumpAndSettle();
+        expect(
+          find.descendant(of: find.byKey(Key(key)), matching: find.text('—')),
+          findsOneWidget,
+          reason: '$key: 3 taps → null (—) again',
+        );
+      }
+      // Both tri-state chips are back to null — ready for Step 5.
+
       // ── Step 5: Set chips — I serve (myServe=true) and I win (serverWon=true)
       // TriChip cycles: null → true → false → null. One tap = true.
       await $(find.byKey(const Key('chip_myServe'))).tap();
@@ -127,6 +199,8 @@ void main() {
         expectedMyServe: true,
         expectedServerWon: true,
       );
+      // Stat columns must always be TRUE or FALSE — never blank.
+      await SheetsVerifier.assertStatFieldsNonBlank(sheetId, 2);
 
       // ── Checkpoint A: score banner and history after point 1 ──────────────
       // myServe=T, serverWon=T → server (me) wins → score advances to 15-0.
@@ -143,6 +217,22 @@ void main() {
       // Tap ‹ to navigate to point #1.
       await $(find.byKey(const Key('nav_prev'))).tap();
       await $.pumpAndSettle();
+
+      // ── Step 8b: stat chips show correct saved values when editing ─────────
+      // Point was logged with defaults: firstServe=✓ doubleFault=✗ forcedError=✗ loserForehand=✓
+      const savedStatMarks = [
+        ('chip_firstServe', '✓'),
+        ('chip_doubleFault', '✗'),
+        ('chip_forcedError', '✗'),
+        ('chip_loserForehand', '✓'),
+      ];
+      for (final (key, mark) in savedStatMarks) {
+        expect(
+          find.descendant(of: find.byKey(Key(key)), matching: find.text(mark)),
+          findsOneWidget,
+          reason: '$key must show $mark when editing saved point',
+        );
+      }
 
       // ── Step 9: Edit point 1 — flip serverWon to false (I lose) ───────────
       // Current state: serverWon=true. One tap: true → false.
