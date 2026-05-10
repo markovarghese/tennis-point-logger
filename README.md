@@ -18,6 +18,14 @@
 
 <p align="center">A mobile app for rapid point-by-point tennis match data entry, built with Flutter and Material You (Material Design 3).</p>
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/01_setup.png"   alt="Match setup"    width="22%" />
+  <img src="docs/screenshots/02_entry.png"   alt="Point entry"    width="22%" />
+  <img src="docs/screenshots/03_history.png" alt="Point history"  width="22%" />
+  <img src="docs/screenshots/04_settings.png" alt="Settings"      width="22%" />
+</p>
 
 ## What it does
 
