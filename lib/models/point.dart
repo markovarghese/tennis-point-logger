@@ -1,3 +1,5 @@
+import 'score_state.dart';
+
 class TennisPoint {
   final String id;
   final DateTime createdAt;
@@ -7,6 +9,7 @@ class TennisPoint {
   bool? serverWon;
   bool? forcedError;
   bool? loserForehand;
+  ScoreState? score;
 
   TennisPoint({
     required this.id,
@@ -17,6 +20,7 @@ class TennisPoint {
     this.serverWon,
     this.forcedError,
     this.loserForehand,
+    this.score,
   });
 
   factory TennisPoint.fresh() {
@@ -26,6 +30,18 @@ class TennisPoint {
       createdAt: now,
     );
   }
+
+  TennisPoint withScore(ScoreState s) => TennisPoint(
+        id: id,
+        createdAt: createdAt,
+        myServe: myServe,
+        firstServe: firstServe,
+        doubleFault: doubleFault,
+        serverWon: serverWon,
+        forcedError: forcedError,
+        loserForehand: loserForehand,
+        score: s,
+      );
 
   TennisPoint copyWith({
     bool? Function()? myServe,
@@ -44,6 +60,7 @@ class TennisPoint {
       serverWon: serverWon != null ? serverWon() : this.serverWon,
       forcedError: forcedError != null ? forcedError() : this.forcedError,
       loserForehand: loserForehand != null ? loserForehand() : this.loserForehand,
+      score: score,
     );
   }
 
@@ -57,6 +74,7 @@ class TennisPoint {
       serverWon: key == 'serverWon' ? value : serverWon,
       forcedError: key == 'forcedError' ? value : forcedError,
       loserForehand: key == 'loserForehand' ? value : loserForehand,
+      score: score,
     );
   }
 
@@ -70,33 +88,33 @@ class TennisPoint {
   String boolVal(bool? v) => v == null ? '' : v ? 'TRUE' : 'FALSE';
 
   List<String> toCsvRow(String matchDateTime, String opponent) => [
-    matchDateTime,
-    timeLabel,
-    opponent,
-    boolVal(myServe),
-    boolVal(firstServe),
-    boolVal(doubleFault),
-    boolVal(serverWon),
-    boolVal(forcedError),
-    boolVal(loserForehand),
-  ];
+        matchDateTime,
+        timeLabel,
+        opponent,
+        boolVal(myServe),
+        boolVal(firstServe),
+        boolVal(doubleFault),
+        boolVal(serverWon),
+        boolVal(forcedError),
+        boolVal(loserForehand),
+      ];
 }
 
 const List<({String key, String label, String abbr})> kFields = [
-  (key: 'myServe',       label: 'My Serve?',                abbr: 'MS'),
-  (key: 'firstServe',    label: "Server's First Serve?",    abbr: '1S'),
-  (key: 'doubleFault',   label: 'Server Double Fault?',     abbr: 'DF'),
-  (key: 'serverWon',     label: 'Server Won?',              abbr: 'SW'),
-  (key: 'forcedError',   label: "Loser's Forced Error?",    abbr: 'FE'),
-  (key: 'loserForehand', label: "Loser's Forehand?",        abbr: 'LF'),
+  (key: 'myServe', label: 'My Serve?', abbr: 'MS'),
+  (key: 'firstServe', label: "Server's First Serve?", abbr: '1S'),
+  (key: 'doubleFault', label: 'Server Double Fault?', abbr: 'DF'),
+  (key: 'serverWon', label: 'Server Won?', abbr: 'SW'),
+  (key: 'forcedError', label: "Loser's Forced Error?", abbr: 'FE'),
+  (key: 'loserForehand', label: "Loser's Forehand?", abbr: 'LF'),
 ];
 
 bool? getField(TennisPoint p, String key) => switch (key) {
-  'myServe'       => p.myServe,
-  'firstServe'    => p.firstServe,
-  'doubleFault'   => p.doubleFault,
-  'serverWon'     => p.serverWon,
-  'forcedError'   => p.forcedError,
-  'loserForehand' => p.loserForehand,
-  _               => null,
-};
+      'myServe' => p.myServe,
+      'firstServe' => p.firstServe,
+      'doubleFault' => p.doubleFault,
+      'serverWon' => p.serverWon,
+      'forcedError' => p.forcedError,
+      'loserForehand' => p.loserForehand,
+      _ => null,
+    };

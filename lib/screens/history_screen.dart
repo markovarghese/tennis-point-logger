@@ -126,10 +126,23 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                       color: AppColors.primary)),
                                 ),
                                 Expanded(
-                                  child: Text(p.timeLabel,
-                                    style: const TextStyle(
-                                      fontSize: 12, fontFamily: 'monospace',
-                                      color: AppColors.onSurfaceVar)),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(p.timeLabel,
+                                          style: const TextStyle(
+                                              fontSize: 12,
+                                              fontFamily: 'monospace',
+                                              color: AppColors.onSurfaceVar)),
+                                      if (p.score != null)
+                                        Text(
+                                          p.score!.compactLabel,
+                                          style: const TextStyle(
+                                              fontSize: 10,
+                                              color: AppColors.onSurfaceVar),
+                                        ),
+                                    ],
+                                  ),
                                 ),
                                 ...kFields.map((f) => SizedBox(
                                   width: 24,

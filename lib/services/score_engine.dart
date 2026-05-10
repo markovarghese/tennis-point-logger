@@ -1,67 +1,44 @@
 import '../models/point.dart';
 import '../models/match_settings.dart';
+import '../models/score_state.dart';
 
-class ScoreState {
-  final int mySets;
-  final int oppSets;
-  final int myGames;
-  final int oppGames;
-  final String ptScore;
-  final bool matchOver;
-  final bool isTiebreak;
-  final int setsToWin;
+export '../models/score_state.dart';
 
-  const ScoreState({
-    this.mySets = 0,
-    this.oppSets = 0,
-    this.myGames = 0,
-    this.oppGames = 0,
-    this.ptScore = '0-0',
-    this.matchOver = false,
-    this.isTiebreak = false,
-    this.setsToWin = 1,
-  });
+ScoreState nextScore(ScoreState prev, TennisPoint point, MatchFormat fmt) {
+  if (point.serverWon == null) return prev;
 
-  ScoreState copyWith({
-    int? mySets, int? oppSets, int? myGames, int? oppGames,
-    String? ptScore, bool? matchOver, bool? isTiebreak, int? setsToWin,
-  }) => ScoreState(
-    mySets: mySets ?? this.mySets,
-    oppSets: oppSets ?? this.oppSets,
-    myGames: myGames ?? this.myGames,
-    oppGames: oppGames ?? this.oppGames,
-    ptScore: ptScore ?? this.ptScore,
-    matchOver: matchOver ?? this.matchOver,
-    isTiebreak: isTiebreak ?? this.isTiebreak,
-    setsToWin: setsToWin ?? this.setsToWin,
-  );
-}
+  final iWon = (point.myServe == true && point.serverWon == true) ||
+      (point.myServe != true && point.serverWon == false);
 
-ScoreState calcScore(List<TennisPoint> points, MatchFormat fmt) {
-  final setsToWin = fmt.setsToWin;
-  int mySets = 0, oppSets = 0;
-  int myGames = 0, oppGames = 0;
-  int myPts = 0, oppPts = 0;
-  bool inTiebreak = false;
-  bool inFinalTb = false;
+  int mySets = prev.mySets, oppSets = prev.oppSets;
+  int myGames = prev.myGames, oppGames = prev.oppGames;
+  int myPts = prev.myPts, oppPts = prev.oppPts;
+  bool inTiebreak = prev.isTiebreak && !prev.inFinalTb;
+  bool inFinalTb = prev.inFinalTb;
+  final setsToWin = prev.setsToWin;
 
   bool isFinalSet() => (mySets + oppSets) == fmt.setsInMatch - 1;
-
   bool shouldStartTiebreak() {
     if (fmt.tiebreakPoints == 0) return false;
     return myGames == fmt.gamesPerSet && oppGames == fmt.gamesPerSet;
   }
 
-  void winGame(bool iWon) {
-    if (iWon) { myGames++; } else { oppGames++; }
+  void winGame(bool won) {
+    if (won) {
+      myGames++;
+    } else {
+      oppGames++;
+    }
     myPts = 0;
     oppPts = 0;
-
     final myWonSet = myGames >= fmt.gamesPerSet && myGames - oppGames >= 2;
     final oppWonSet = oppGames >= fmt.gamesPerSet && oppGames - myGames >= 2;
-
     if (myWonSet || oppWonSet) {
-      if (myWonSet) { mySets++; } else { oppSets++; }
+      if (myWonSet) {
+        mySets++;
+      } else {
+        oppSets++;
+      }
       myGames = 0;
       oppGames = 0;
       inTiebreak = false;
@@ -75,62 +52,75 @@ ScoreState calcScore(List<TennisPoint> points, MatchFormat fmt) {
     }
   }
 
-  for (final p in points) {
-    if (p.serverWon == null) continue;
-    final iWon = (p.myServe == true && p.serverWon == true) ||
-                 (p.myServe != true && p.serverWon == false);
-
-    if (inFinalTb) {
-      if (iWon) { myPts++; } else { oppPts++; }
-      final tbTarget = fmt.finalSet == FinalSetType.sixPointTb ? 6 : 10;
-      if (myPts >= tbTarget && myPts - oppPts >= 2) {
-        mySets++;
-        myGames = 0; oppGames = 0; myPts = 0; oppPts = 0;
-        inFinalTb = false;
-      } else if (oppPts >= tbTarget && oppPts - myPts >= 2) {
-        oppSets++;
-        myGames = 0; oppGames = 0; myPts = 0; oppPts = 0;
-        inFinalTb = false;
-      }
-    } else if (inTiebreak) {
-      if (iWon) { myPts++; } else { oppPts++; }
-      final tbTarget = fmt.tiebreakPoints;
-      if (myPts >= tbTarget && myPts - oppPts >= 2) {
-        winGame(true);
-      } else if (oppPts >= tbTarget && oppPts - myPts >= 2) {
-        winGame(false);
-      }
-    } else if (!fmt.adScoring) {
-      if (iWon) { myPts++; } else { oppPts++; }
-      if (myPts >= 4 && myPts > oppPts) {
-        winGame(true);
-      } else if (oppPts >= 4 && oppPts > myPts) {
-        winGame(false);
-      } else if (myPts == 3 && oppPts == 3) {
-        // No-ad: next point wins
-        // Already tracked; whichever gets to 4 first wins
-      }
+  if (inFinalTb) {
+    if (iWon) {
+      myPts++;
     } else {
-      if (iWon) { myPts++; } else { oppPts++; }
-      if (myPts >= 4 && myPts - oppPts >= 2) {
-        winGame(true);
-      } else if (oppPts >= 4 && oppPts - myPts >= 2) {
-        winGame(false);
-      }
+      oppPts++;
     }
-
-    if (!inTiebreak && !inFinalTb && shouldStartTiebreak()) {
-      if (isFinalSet() && fmt.finalSet != FinalSetType.full) {
-        inFinalTb = true;
-        myGames = 0;
-        oppGames = 0;
-      } else {
-        inTiebreak = true;
-      }
+    final tbTarget = fmt.finalSet == FinalSetType.sixPointTb ? 6 : 10;
+    if (myPts >= tbTarget && myPts - oppPts >= 2) {
+      mySets++;
+      myGames = 0;
+      oppGames = 0;
+      myPts = 0;
+      oppPts = 0;
+      inFinalTb = false;
+    } else if (oppPts >= tbTarget && oppPts - myPts >= 2) {
+      oppSets++;
+      myGames = 0;
+      oppGames = 0;
+      myPts = 0;
+      oppPts = 0;
+      inFinalTb = false;
+    }
+  } else if (inTiebreak) {
+    if (iWon) {
+      myPts++;
+    } else {
+      oppPts++;
+    }
+    final tbTarget = fmt.tiebreakPoints;
+    if (myPts >= tbTarget && myPts - oppPts >= 2) {
+      winGame(true);
+    } else if (oppPts >= tbTarget && oppPts - myPts >= 2) {
+      winGame(false);
+    }
+  } else if (!fmt.adScoring) {
+    if (iWon) {
+      myPts++;
+    } else {
+      oppPts++;
+    }
+    if (myPts >= 4 && myPts > oppPts) {
+      winGame(true);
+    } else if (oppPts >= 4 && oppPts > myPts) {
+      winGame(false);
+    }
+  } else {
+    if (iWon) {
+      myPts++;
+    } else {
+      oppPts++;
+    }
+    if (myPts >= 4 && myPts - oppPts >= 2) {
+      winGame(true);
+    } else if (oppPts >= 4 && oppPts - myPts >= 2) {
+      winGame(false);
     }
   }
 
-  String ptScore;
+  if (!inTiebreak && !inFinalTb && shouldStartTiebreak()) {
+    if (isFinalSet() && fmt.finalSet != FinalSetType.full) {
+      inFinalTb = true;
+      myGames = 0;
+      oppGames = 0;
+    } else {
+      inTiebreak = true;
+    }
+  }
+
+  final String ptScore;
   if (inFinalTb || inTiebreak) {
     ptScore = '$myPts-$oppPts';
   } else if (!fmt.adScoring) {
@@ -153,16 +143,24 @@ ScoreState calcScore(List<TennisPoint> points, MatchFormat fmt) {
     }
   }
 
-  final matchOver = mySets >= setsToWin || oppSets >= setsToWin;
-
   return ScoreState(
     mySets: mySets,
     oppSets: oppSets,
     myGames: myGames,
     oppGames: oppGames,
+    myPts: myPts,
+    oppPts: oppPts,
     ptScore: ptScore,
-    matchOver: matchOver,
+    matchOver: mySets >= setsToWin || oppSets >= setsToWin,
     isTiebreak: inTiebreak || inFinalTb,
+    inFinalTb: inFinalTb,
     setsToWin: setsToWin,
+  );
+}
+
+ScoreState calcScore(List<TennisPoint> points, MatchFormat fmt) {
+  return points.fold(
+    ScoreState(setsToWin: fmt.setsToWin),
+    (prev, point) => nextScore(prev, point, fmt),
   );
 }
