@@ -16,9 +16,9 @@
   </a>
 </p>
 
-<p align="center">A mobile app for rapid point-by-point tennis match data entry, built with Flutter and Material You (Material Design 3).</p>
+<p align="center">Log every tennis point in seconds, then analyse your serve quality, error patterns, and long-term trends in an auto-generated Google Sheet — no manual spreadsheet work required.</p>
 
-## Screenshots
+## App screenshots
 
 <p align="center">
   <img src="docs/screenshots/01_setup.png"   alt="Match setup"    width="22%" />
@@ -26,6 +26,24 @@
   <img src="docs/screenshots/03_history.png" alt="Point history"  width="22%" />
   <img src="docs/screenshots/04_settings.png" alt="Settings"      width="22%" />
 </p>
+
+<p align="center"><em>Match setup · Point entry · History · Settings</em></p>
+
+## From court to insights
+
+Log every point in seconds on your phone — then open the Google Sheet the app created and see your performance at a glance.
+
+<p align="center">
+  <img src="docs/screenshots/05_sheets_summary.png" alt="Google Sheets Summary tab" width="90%" />
+</p>
+
+The **Summary tab** in every generated spreadsheet includes:
+
+- **Quality of serves** — counts and percentages of first-serve in, second-serve in, and double faults, broken down by opponent.
+- **Type of loss** — how you (and your opponent) lost points: forehand/backhand unforced errors, forced errors, and double faults.
+- **Winning/Losing Trends & Streaks** — a time-series chart across all logged matches showing whether your overall win rate is climbing or falling.
+
+All charts update automatically as you log more matches — no manual work required.
 
 ## What it does
 
