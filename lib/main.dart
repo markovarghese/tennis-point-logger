@@ -309,6 +309,7 @@ class _AppShellState extends State<_AppShell> {
       currentPoint: _currentPoint,
       matchStartScore: _matchStartScore,
       opponentName: _opponentName,
+      matchDate: _matchDate,
       format: _settings.format,
       gsState: _settings.gsState,
       onFieldChange: _handleFieldChange,
