@@ -18,7 +18,8 @@ class EntryScreen extends StatefulWidget {
   final MatchFormat format;
   final GsState gsState;
   final void Function(String key, bool? value) onFieldChange;
-  final VoidCallback onNext;
+  final VoidCallback onCommitPoint;
+  final void Function(int idx) onDeletePoint;
   final VoidCallback onOpenHistory;
   final VoidCallback onBackToSetup;
   final VoidCallback onExport;
@@ -35,7 +36,8 @@ class EntryScreen extends StatefulWidget {
     required this.format,
     required this.gsState,
     required this.onFieldChange,
-    required this.onNext,
+    required this.onCommitPoint,
+    required this.onDeletePoint,
     required this.onOpenHistory,
     required this.onBackToSetup,
     required this.onExport,
@@ -47,7 +49,6 @@ class EntryScreen extends StatefulWidget {
   State<EntryScreen> createState() => _EntryScreenState();
 }
 
-const _binaryFields = {'firstServe', 'doubleFault', 'forcedError', 'loserForehand'};
 
 class _EntryScreenState extends State<EntryScreen> {
   int? _viewIdx;
@@ -70,8 +71,18 @@ class _EntryScreenState extends State<EntryScreen> {
   void _goTo(int? idx) => setState(() => _viewIdx = idx);
 
   void _handleChipChange(String key, bool? val) {
+    // Block clearing serverWon once it has a value
+    if (key == 'serverWon' && val == null && _displayPoint.serverWon != null) return;
+
     if (_isNew) {
+      final serverWonWasNull = widget.currentPoint.serverWon == null;
       widget.onFieldChange(key, val);
+      if (key == 'serverWon' && val != null && serverWonWasNull) {
+        widget.onCommitPoint();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) setState(() => _viewIdx = widget.points.length - 1);
+        });
+      }
     } else {
       final updated = _displayPoint.withField(key, val);
       widget.onEditPoint(updated);
@@ -80,6 +91,15 @@ class _EntryScreenState extends State<EntryScreen> {
         if (mounted) setState(() => _autoSaveFlash = false);
       });
     }
+  }
+
+  void _handleDelete() {
+    final idx = _viewIdx!;
+    final isLast = idx == widget.points.length - 1;
+    widget.onDeletePoint(idx);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _viewIdx = isLast ? null : idx);
+    });
   }
 
   Future<void> _openOverrideEditor() async {
@@ -96,6 +116,7 @@ class _EntryScreenState extends State<EntryScreen> {
     final nextIdx = _isNew
         ? null
         : (_viewIdx! < total - 1 ? _viewIdx! + 1 : null);
+    final isLastCommitted = !_isNew && _viewIdx == total - 1;
 
     final pointLabel = _isNew
         ? 'New · #${total + 1}'
@@ -187,6 +208,13 @@ class _EntryScreenState extends State<EntryScreen> {
             onOpenHistory: widget.onOpenHistory,
           ),
 
+          // Editing context pill
+          if (!_isNew)
+            _EditingPill(
+              pointIdx: _viewIdx!,
+              autoSaveFlash: _autoSaveFlash,
+            ),
+
           // Chips List
           Expanded(
             child: ListView.separated(
@@ -200,48 +228,123 @@ class _EntryScreenState extends State<EntryScreen> {
                   value: getField(_displayPoint, f.key),
                   label: f.label,
                   onChange: (v) => _handleChipChange(f.key, v),
-                  triState: !_binaryFields.contains(f.key),
+                  triState: f.key == 'serverWon' && getField(_displayPoint, 'serverWon') == null,
                 );
               },
             ),
           ),
 
           // Bottom CTA
-          Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: SizedBox(
-              width: double.infinity,
-              height: 64,
-              child: FilledButton(
-                key: const Key('bottom_cta_button'),
-                onPressed: _isNew ? widget.onNext : () => _goTo(null),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.secondaryContainer,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 4,
-                  shadowColor: AppColors.secondaryContainer.withValues(alpha: 0.2),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      _isNew ? 'NEXT POINT' : 'BACK TO CURRENT',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(_isNew ? Icons.arrow_forward : Icons.keyboard_return, size: 20),
-                  ],
+          _buildBottomCta(context, isLastCommitted),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomCta(BuildContext context, bool isLastCommitted) {
+    final bottomPad = 20.0 + MediaQuery.of(context).padding.bottom;
+
+    if (_isNew) {
+      return Padding(
+        padding: EdgeInsets.fromLTRB(20, 0, 20, bottomPad),
+        child: SizedBox(
+          width: double.infinity,
+          height: 64,
+          child: FilledButton(
+            key: const Key('bottom_cta_button'),
+            onPressed: null,
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.secondaryContainer,
+              foregroundColor: Colors.white,
+              disabledBackgroundColor: AppColors.secondaryContainer.withValues(alpha: 0.4),
+              disabledForegroundColor: Colors.white54,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
+            ),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('NEW POINT', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 1)),
+                SizedBox(width: 8),
+                Icon(Icons.add, size: 20),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (isLastCommitted) {
+      return Padding(
+        padding: EdgeInsets.fromLTRB(20, 0, 20, bottomPad),
+        child: Row(
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: 64,
+                child: FilledButton(
+                  key: const Key('bottom_cta_button'),
+                  onPressed: () => _goTo(null),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.secondaryContainer,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 4,
+                    shadowColor: AppColors.secondaryContainer.withValues(alpha: 0.2),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('NEW POINT', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 1)),
+                      SizedBox(width: 8),
+                      Icon(Icons.add, size: 20),
+                    ],
+                  ),
                 ),
               ),
             ),
+            const SizedBox(width: 12),
+            SizedBox(
+              height: 64,
+              child: OutlinedButton(
+                onPressed: _handleDelete,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                  side: const BorderSide(color: AppColors.error),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                ),
+                child: const Text('DELETE', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Non-last committed point: delete only
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, 0, 20, bottomPad),
+      child: SizedBox(
+        width: double.infinity,
+        height: 64,
+        child: OutlinedButton(
+          key: const Key('bottom_cta_button'),
+          onPressed: _handleDelete,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.error,
+            side: const BorderSide(color: AppColors.error),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
-          SizedBox(height: MediaQuery.of(context).padding.bottom),
-        ],
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.delete_outline, size: 20),
+              SizedBox(width: 8),
+              Text('DELETE POINT', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 1)),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -342,6 +445,32 @@ class _NavBtn extends StatelessWidget {
       icon: child,
       constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
       padding: EdgeInsets.zero,
+    );
+  }
+}
+
+class _EditingPill extends StatelessWidget {
+  final int pointIdx;
+  final bool autoSaveFlash;
+
+  const _EditingPill({required this.pointIdx, required this.autoSaveFlash});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      color: autoSaveFlash ? AppColors.primary.withValues(alpha: 0.15) : AppColors.surfaceVariant,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Text(
+        autoSaveFlash
+            ? '✓ Saved'
+            : 'Editing point #${pointIdx + 1} — changes save instantly',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: autoSaveFlash ? AppColors.primary : AppColors.onSurfaceVariant,
+        ),
+      ),
     );
   }
 }

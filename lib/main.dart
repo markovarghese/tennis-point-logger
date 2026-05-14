@@ -91,7 +91,7 @@ class _AppShellState extends State<_AppShell> {
     });
   }
 
-  void _handleNext() {
+  void _handleCommitCurrentPoint() {
     final pointToSave = TennisPoint(
       id: _currentPoint.id,
       createdAt: _currentPoint.createdAt,
@@ -111,6 +111,14 @@ class _AppShellState extends State<_AppShell> {
     _autoSync(pointToSave);
   }
 
+  void _handleDeletePoint(int idx) {
+    setState(() {
+      _points.removeAt(idx);
+      if (idx < _points.length) _recomputeScoresFrom(idx);
+    });
+    AppLog.info('match: point #${idx + 1} deleted');
+  }
+
   ScoreState get _prevScore =>
       _points.isEmpty ? _matchStartScore : (_points.last.score ?? _matchStartScore);
 
@@ -127,14 +135,13 @@ class _AppShellState extends State<_AppShell> {
 
   TennisPoint _freshPointWithDefaults() {
     final now = DateTime.now();
-    final myServe = _computeMyServeDefault();
     return TennisPoint(
       id: '${now.millisecondsSinceEpoch}_${now.microsecond}',
       createdAt: now,
-      myServe: myServe,
+      myServe: _computeMyServeDefault() ?? true,
       firstServe: true,
       doubleFault: false,
-      serverWon: myServe == null ? null : !myServe,
+      serverWon: null,
       forcedError: false,
       loserForehand: true,
     );
@@ -312,7 +319,8 @@ class _AppShellState extends State<_AppShell> {
       format: _settings.format,
       gsState: _settings.gsState,
       onFieldChange: _handleFieldChange,
-      onNext: _handleNext,
+      onCommitPoint: _handleCommitCurrentPoint,
+      onDeletePoint: _handleDeletePoint,
       onOpenHistory: () => setState(() => _screen = _AppScreen.history),
       onBackToSetup: () => setState(() => _screen = _AppScreen.setup),
       onExport: () => showExportSheet(context, _points, _opponentName, _matchDate),
