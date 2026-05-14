@@ -6,12 +6,14 @@ import '../theme.dart';
 import '../widgets/tri_chip.dart';
 import '../widgets/score_banner.dart';
 import '../widgets/score_override_sheet.dart';
+import '../widgets/new_match_confirm_sheet.dart';
 
 class EntryScreen extends StatefulWidget {
   final List<TennisPoint> points;
   final TennisPoint currentPoint;
   final ScoreState matchStartScore;
   final String opponentName;
+  final DateTime matchDate;
   final MatchFormat format;
   final GsState gsState;
   final void Function(String key, bool? value) onFieldChange;
@@ -28,6 +30,7 @@ class EntryScreen extends StatefulWidget {
     required this.currentPoint,
     required this.matchStartScore,
     required this.opponentName,
+    required this.matchDate,
     required this.format,
     required this.gsState,
     required this.onFieldChange,
@@ -109,7 +112,21 @@ class _EntryScreenState extends State<EntryScreen> {
           child: Row(
             children: [
               TextButton(
-                onPressed: widget.onBackToSetup,
+                onPressed: () async {
+                  if (widget.points.isEmpty) {
+                    widget.onBackToSetup();
+                    return;
+                  }
+                  final confirm = await showNewMatchConfirmSheet(
+                    context,
+                    opponentName: widget.opponentName,
+                    matchDate: widget.matchDate,
+                    pointCount: widget.points.length,
+                  );
+                  if (confirm == true) {
+                    widget.onBackToSetup();
+                  }
+                },
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.onSurfaceVar,
                   padding: const EdgeInsets.all(6),
