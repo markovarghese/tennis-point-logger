@@ -279,6 +279,20 @@ class _EntryScreenState extends State<EntryScreen> {
         padding: EdgeInsets.fromLTRB(20, 0, 20, bottomPad),
         child: Row(
           children: [
+            SizedBox(
+              height: 64,
+              child: OutlinedButton(
+                onPressed: _handleDelete,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                  side: const BorderSide(color: AppColors.error),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                ),
+                child: const Text('DELETE', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+              ),
+            ),
+            const SizedBox(width: 12),
             Expanded(
               child: SizedBox(
                 height: 64,
@@ -301,20 +315,6 @@ class _EntryScreenState extends State<EntryScreen> {
                     ],
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            SizedBox(
-              height: 64,
-              child: OutlinedButton(
-                onPressed: _handleDelete,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.error,
-                  side: const BorderSide(color: AppColors.error),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                ),
-                child: const Text('DELETE', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
               ),
             ),
           ],
