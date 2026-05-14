@@ -5,7 +5,6 @@ class TriChip extends StatelessWidget {
   final bool? value;
   final String label;
   final ValueChanged<bool?> onChange;
-  final bool compact;
   final bool triState;
 
   const TriChip({
@@ -13,89 +12,126 @@ class TriChip extends StatelessWidget {
     required this.value,
     required this.label,
     required this.onChange,
-    this.compact = false,
     this.triState = true,
   });
 
-  // triState=true: cycles null → true → false → null
-  // triState=false: cycles true → false → true (no null)
-  bool? get _next => triState
-      ? (value == null ? true : value == true ? false : null)
-      : (value == true ? false : true);
+  @override
+  Widget build(BuildContext context) {
+    final baseKey = key is ValueKey ? (key as ValueKey).value.toString() : null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            label.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppColors.onSurfaceVariant,
+              letterSpacing: 1,
+            ),
+          ),
+        ),
+        Row(
+          children: [
+            _ChipButton(
+              key: baseKey != null ? Key('${baseKey}_Y') : null,
+              label: 'Y',
+              icon: Icons.check,
+              active: value == true,
+              activeColor: AppColors.primary,
+              onTap: () => onChange(true),
+            ),
+            const SizedBox(width: 8),
+            _ChipButton(
+              key: baseKey != null ? Key('${baseKey}_N') : null,
+              label: 'N',
+              icon: Icons.close,
+              active: value == false,
+              activeColor: AppColors.secondaryContainer,
+              onTap: () => onChange(false),
+            ),
+            if (triState) ...[
+              const SizedBox(width: 8),
+              _ChipButton(
+                key: baseKey != null ? Key('${baseKey}_null') : null,
+                label: '',
+                icon: Icons.remove,
+                active: value == null,
+                activeColor: AppColors.outline,
+                isDashed: true,
+                onTap: () => onChange(null),
+              ),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+}
 
-  Color get _bg => value == null
-      ? AppColors.chipNull
-      : value == true
-          ? AppColors.chipYes
-          : AppColors.chipNo;
+class _ChipButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool active;
+  final Color activeColor;
+  final VoidCallback onTap;
+  final bool isDashed;
 
-  Color get _textColor => value == null
-      ? AppColors.chipNullText
-      : value == true
-          ? AppColors.chipYesText
-          : AppColors.chipNoText;
-
-  Color get _markBg => value == null
-      ? AppColors.outlineVariant
-      : value == true
-          ? AppColors.chipYesMark
-          : AppColors.chipNoMark;
-
-  String get _mark => value == null ? '—' : value == true ? '✓' : '✗';
+  const _ChipButton({
+    super.key,
+    required this.label,
+    required this.icon,
+    required this.active,
+    required this.activeColor,
+    required this.onTap,
+    this.isDashed = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final markSize = compact ? 22.0 : 28.0;
-    final fontSize = compact ? 12.0 : 14.0;
-    final markFontSize = compact ? 11.0 : 14.0;
-    final vPad = compact ? 6.0 : 10.0;
-    final hPad = compact ? 10.0 : 14.0;
-    final gap = compact ? 6.0 : 8.0;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => onChange(_next),
-        borderRadius: BorderRadius.circular(100),
-        splashColor: _bg.withAlpha(120),
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          padding: EdgeInsets.fromLTRB(vPad, vPad, hPad, vPad),
+          height: 64,
           decoration: BoxDecoration(
-            color: _bg,
-            borderRadius: BorderRadius.circular(100),
+            color: active ? activeColor : const Color(0xFFEDEEED), // surface-container
+            borderRadius: BorderRadius.circular(12),
+            border: isDashed && !active
+                ? Border.all(color: AppColors.outlineVariant, style: BorderStyle.solid) // Simplified dashed as Border doesn't support dash natively easily
+                : null,
+            boxShadow: active
+                ? [
+                    BoxShadow(
+                      color: activeColor.withValues(alpha: 0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    )
+                  ]
+                : null,
           ),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                width: markSize,
-                height: markSize,
-                decoration: BoxDecoration(
-                  color: _markBg,
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  _mark,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: markFontSize,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+              Icon(
+                icon,
+                size: 20,
+                color: active ? Colors.white : AppColors.onSurface,
               ),
-              SizedBox(width: gap),
-              Expanded(
-                child: Text(
+              if (label.isNotEmpty) ...[
+                const SizedBox(width: 4),
+                Text(
                   label,
                   style: TextStyle(
-                    fontSize: fontSize,
-                    fontWeight: FontWeight.w500,
-                    color: _textColor,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: active ? Colors.white : AppColors.onSurface,
                   ),
                 ),
-              ),
+              ],
             ],
           ),
         ),

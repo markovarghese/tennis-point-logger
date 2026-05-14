@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../services/app_log.dart';
 import '../theme.dart';
 
@@ -24,12 +25,6 @@ class _SetupScreenState extends State<SetupScreen> {
       initialDate: _date,
       firstDate: DateTime(2020),
       lastDate: DateTime.now().add(const Duration(days: 365)),
-      builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(
-          colorScheme: Theme.of(context).colorScheme,
-        ),
-        child: child!,
-      ),
     );
     if (picked != null) {
       AppLog.info('setup: date → ${DateFormat('d MMM yyyy').format(picked)}');
@@ -46,160 +41,178 @@ class _SetupScreenState extends State<SetupScreen> {
   @override
   Widget build(BuildContext context) {
     final dateLabel = DateFormat('d MMM yyyy').format(_date);
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: AppColors.surface,
-      body: Column(
-        children: [
-          // Header
-          Container(
-            color: AppColors.primary,
-            padding: const EdgeInsets.fromLTRB(20, 48, 20, 24),
-            width: double.infinity,
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'TENNIS LOGGER',
-                  style: TextStyle(
-                    fontSize: 11, color: Color(0xB3FFFFFF),
-                    fontWeight: FontWeight.w600, letterSpacing: 1,
-                  ),
+      body: CourtBackground(
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 32, 20, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.sports_tennis, color: AppColors.primary, size: 24),
+                        const SizedBox(width: 8),
+                        Text(
+                          'MATCH TRACKER',
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontFamily: GoogleFonts.hankenGrotesk().fontFamily,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'New Match',
+                      style: theme.textTheme.displaySmall?.copyWith(
+                        fontFamily: GoogleFonts.hankenGrotesk().fontFamily,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primary,
+                        letterSpacing: -1,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Set up your match to begin logging.',
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 6),
-                Text(
-                  'New Match',
-                  style: TextStyle(
-                    fontSize: 26, color: Colors.white, fontWeight: FontWeight.w700,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Set up your match to begin logging',
-                  style: TextStyle(fontSize: 13, color: Color(0xB3FFFFFF)),
-                ),
-              ],
-            ),
-          ),
+              ),
 
-          // Form
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 4),
-                  // Opponent
-                  const Text(
-                    'Opponent Name *',
-                    style: TextStyle(
-                      fontSize: 13, fontWeight: FontWeight.w600,
-                      color: AppColors.onSurfaceVar, letterSpacing: 0.3,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  TextField(
-                    key: const Key('opponent_name_field'),
-                    controller: _opponentCtrl,
-                    autofocus: true,
-                    style: const TextStyle(fontSize: 16, color: AppColors.onSurface),
-                    decoration: InputDecoration(
-                      hintText: 'e.g. Rafael N.',
-                      hintStyle: const TextStyle(color: AppColors.outline),
-                      filled: true,
-                      fillColor: AppColors.surface,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 14,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: AppColors.outlineVariant),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: AppColors.outlineVariant),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: AppColors.primary, width: 2),
-                      ),
-                    ),
-                    onChanged: (_) => setState(() {}),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Date
-                  const Text(
-                    'Date',
-                    style: TextStyle(
-                      fontSize: 13, fontWeight: FontWeight.w600,
-                      color: AppColors.onSurfaceVar, letterSpacing: 0.3,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  InkWell(
-                    onTap: _pickDate,
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      width: double.infinity,
-                      height: 52,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.outlineVariant),
-                        borderRadius: BorderRadius.circular(8),
-                        color: AppColors.surface,
-                      ),
-                      alignment: Alignment.centerLeft,
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              dateLabel,
-                              style: const TextStyle(
-                                fontSize: 16, color: AppColors.onSurface,
+              // Form in GlassPanel
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: GlassPanel(
+                    borderRadius: 8,
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'OPPONENT NAME',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.onSurfaceVariant,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          key: const Key('opponent_name_field'),
+                          controller: _opponentCtrl,
+                          autofocus: true,
+                          style: theme.textTheme.bodyLarge,
+                          decoration: const InputDecoration(
+                            hintText: 'Enter name',
+                            hintStyle: TextStyle(color: AppColors.outlineVariant),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            border: UnderlineInputBorder(
+                              borderSide: BorderSide(color: AppColors.outlineVariant, width: 2),
+                            ),
+                            enabledBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: AppColors.outlineVariant, width: 2),
+                            ),
+                            focusedBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: AppColors.secondaryContainer, width: 2),
+                            ),
+                            filled: true,
+                            fillColor: Colors.transparent,
+                          ),
+                          onChanged: (_) => setState(() {}),
+                        ),
+                        const SizedBox(height: 32),
+                        const Text(
+                          'DATE',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.onSurfaceVariant,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        InkWell(
+                          onTap: _pickDate,
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                            decoration: const BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(color: AppColors.outlineVariant, width: 2),
                               ),
                             ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    dateLabel,
+                                    style: theme.textTheme.bodyLarge,
+                                  ),
+                                ),
+                                const Icon(Icons.calendar_today, size: 18, color: AppColors.outline),
+                              ],
+                            ),
                           ),
-                          const Icon(Icons.calendar_today_outlined,
-                              size: 18, color: AppColors.onSurfaceVar),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
 
-          // CTA
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              20, 0, 20, 24 + MediaQuery.of(context).padding.bottom,
-            ),
-            child: SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: FilledButton(
-                key: const Key('start_match_button'),
-                onPressed: _canStart
-                    ? () => widget.onStart(_opponentCtrl.text.trim(), _date)
-                    : null,
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  disabledBackgroundColor: AppColors.outlineVariant,
-                  foregroundColor: AppColors.onPrimary,
-                  disabledForegroundColor: AppColors.onSurfaceVar,
-                  shape: const StadiumBorder(),
-                  elevation: _canStart ? 2 : 0,
-                ),
-                child: const Text(
-                  'Start Match →',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: 0.5),
+              // CTA
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 64,
+                  child: FilledButton(
+                    key: const Key('start_match_button'),
+                    onPressed: _canStart
+                        ? () => widget.onStart(_opponentCtrl.text.trim(), _date)
+                        : null,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.secondaryContainer,
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: AppColors.outlineVariant,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                      elevation: 4,
+                      shadowColor: AppColors.secondaryContainer.withValues(alpha: 0.2),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'START MATCH',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: Colors.white,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.arrow_forward, size: 20),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/point.dart';
 import '../models/match_settings.dart';
 import '../models/score_state.dart';
@@ -49,7 +50,6 @@ class EntryScreen extends StatefulWidget {
 const _binaryFields = {'firstServe', 'doubleFault', 'forcedError', 'loserForehand'};
 
 class _EntryScreenState extends State<EntryScreen> {
-  // null = current new point; non-null = viewing a saved point by index
   int? _viewIdx;
   bool _autoSaveFlash = false;
 
@@ -103,137 +103,146 @@ class _EntryScreenState extends State<EntryScreen> {
 
     final synced = widget.gsState == GsState.connected;
 
-    return Column(
-      children: [
-        // Top strip: ◀ Setup | sync dot | Export ↑
-        Container(
-          color: AppColors.surface,
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-          child: Row(
-            children: [
-              TextButton(
-                onPressed: () async {
-                  if (widget.points.isEmpty) {
-                    widget.onBackToSetup();
-                    return;
-                  }
-                  final confirm = await showNewMatchConfirmSheet(
-                    context,
-                    opponentName: widget.opponentName,
-                    matchDate: widget.matchDate,
-                    pointCount: widget.points.length,
-                  );
-                  if (confirm == true) {
-                    widget.onBackToSetup();
-                  }
-                },
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.onSurfaceVar,
-                  padding: const EdgeInsets.all(6),
-                  minimumSize: const Size(0, 0),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: const Text('◀ Setup',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
-              ),
-              const Spacer(),
-              Row(
-                mainAxisSize: MainAxisSize.min,
+    return CourtBackground(
+      child: Column(
+        children: [
+          // Top Bar
+          SafeArea(
+            bottom: false,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
                 children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: synced ? const Color(0xFF34A853) : AppColors.outline,
-                    ),
+                  IconButton(
+                    onPressed: () async {
+                      if (widget.points.isEmpty) {
+                        widget.onBackToSetup();
+                        return;
+                      }
+                      final confirm = await showNewMatchConfirmSheet(
+                        context,
+                        opponentName: widget.opponentName,
+                        matchDate: widget.matchDate,
+                        pointCount: widget.points.length,
+                      );
+                      if (confirm == true) {
+                        widget.onBackToSetup();
+                      }
+                    },
+                    icon: const Icon(Icons.arrow_back, color: AppColors.primary),
                   ),
-                  const SizedBox(width: 6),
-                  Text(synced ? 'Synced' : 'No sync',
-                      style: const TextStyle(
-                          fontSize: 11, color: AppColors.onSurfaceVar)),
+                  const Spacer(),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        synced ? Icons.cloud_done : Icons.cloud_off,
+                        size: 16,
+                        color: synced ? AppColors.primary : AppColors.outline,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        synced ? 'SYNCED' : 'OFFLINE',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.outline,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: widget.points.isEmpty ? null : widget.onExport,
+                    icon: const Icon(Icons.ios_share, color: AppColors.primary),
+                  ),
                 ],
               ),
-              const Spacer(),
-              TextButton(
-                onPressed: widget.points.isEmpty ? null : widget.onExport,
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  disabledForegroundColor: AppColors.outlineVariant,
-                  padding: const EdgeInsets.all(6),
-                  minimumSize: const Size(0, 0),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: const Text('Export ↑',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-              ),
-            ],
+            ),
           ),
-        ),
 
-        // Score banner — shows score after last saved point (or the edited point)
-        ScoreBanner(
-          score: _displayScore,
-          opponentName: widget.opponentName,
-          onTap: _openOverrideEditor,
-        ),
+          // Score Banner
+          ScoreBanner(
+            score: _displayScore,
+            opponentName: widget.opponentName,
+            onTap: _openOverrideEditor,
+          ),
 
-        // Navigation strip
-        _NavStrip(
-          pointLabel: pointLabel,
-          timeLabel: _displayPoint.timeLabel,
-          isNew: _isNew,
-          autoSaveFlash: _autoSaveFlash,
-          canPrev: prevIdx != null,
-          canNext: nextIdx != null || !_isNew,
-          totalPoints: total,
-          onPrev: prevIdx != null ? () => _goTo(prevIdx) : null,
-          onNext: nextIdx != null
-              ? () => _goTo(nextIdx)
-              : !_isNew
-                  ? () => _goTo(null)
-                  : null,
-          onOpenHistory: widget.onOpenHistory,
-        ),
-
-        // Editing context pill
-        if (!_isNew)
-          _EditingPill(
-            pointIdx: _viewIdx!,
+          // Navigation Strip
+          _NavStrip(
+            pointLabel: pointLabel,
+            timeLabel: _displayPoint.timeLabel,
+            isNew: _isNew,
             autoSaveFlash: _autoSaveFlash,
-            onNewPoint: () => _goTo(null),
+            canPrev: prevIdx != null,
+            canNext: nextIdx != null || !_isNew,
+            totalPoints: total,
+            onPrev: prevIdx != null ? () => _goTo(prevIdx) : null,
+            onNext: nextIdx != null
+                ? () => _goTo(nextIdx)
+                : !_isNew
+                    ? () => _goTo(null)
+                    : null,
+            onOpenHistory: widget.onOpenHistory,
           ),
 
-        // Toggle chips
-        Expanded(
-          child: ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: kFields.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemBuilder: (context, i) {
-              final f = kFields[i];
-              return TriChip(
-                key: Key('chip_${f.key}'),
-                value: getField(_displayPoint, f.key),
-                label: f.label,
-                onChange: (v) => _handleChipChange(f.key, v),
-                triState: !_binaryFields.contains(f.key),
-              );
-            },
+          // Chips List
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+              itemCount: kFields.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 24),
+              itemBuilder: (context, i) {
+                final f = kFields[i];
+                return TriChip(
+                  key: Key('chip_${f.key}'),
+                  value: getField(_displayPoint, f.key),
+                  label: f.label,
+                  onChange: (v) => _handleChipChange(f.key, v),
+                  triState: !_binaryFields.contains(f.key),
+                );
+              },
+            ),
           ),
-        ),
 
-        // Bottom CTA
-        _BottomCta(
-          isNew: _isNew,
-          onNext: _isNew
-              ? () {
-                  widget.onNext();
-                  setState(() => _viewIdx = null);
-                }
-              : () => _goTo(null),
-        ),
-      ],
+          // Bottom CTA
+          Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: SizedBox(
+              width: double.infinity,
+              height: 64,
+              child: FilledButton(
+                key: const Key('bottom_cta_button'),
+                onPressed: _isNew ? widget.onNext : () => _goTo(null),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.secondaryContainer,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 4,
+                  shadowColor: AppColors.secondaryContainer.withValues(alpha: 0.2),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      _isNew ? 'NEXT POINT' : 'BACK TO CURRENT',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(_isNew ? Icons.arrow_forward : Icons.keyboard_return, size: 20),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          SizedBox(height: MediaQuery.of(context).padding.bottom),
+        ],
+      ),
     );
   }
 }
@@ -260,64 +269,60 @@ class _NavStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.surfaceVariant,
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(100),
+        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.3)),
+      ),
+      padding: const EdgeInsets.all(4),
       child: Row(
         children: [
           _NavBtn(
             key: const Key('nav_prev'),
             onTap: onPrev,
-            child: Text('‹',
-                style: TextStyle(
-                  fontSize: 22,
-                  color: canPrev ? AppColors.primary : AppColors.outlineVariant,
-                )),
+            child: Icon(Icons.chevron_left, color: canPrev ? AppColors.primary : AppColors.outlineVariant),
           ),
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Column(
-                children: [
-                  Text(pointLabel,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: isNew ? AppColors.primary : AppColors.secondary,
-                      )),
-                  Text(
-                    '⏱ $timeLabel${autoSaveFlash ? '  ✓ saved' : ''}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontFamily: 'monospace',
-                      color: AppColors.onSurfaceVar,
-                    ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  pointLabel,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                    fontFamily: GoogleFonts.inter().fontFamily,
                   ),
-                ],
-              ),
+                ),
+                Text(
+                  timeLabel,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: AppColors.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: onOpenHistory,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              minimumSize: const Size(0, 32),
+              foregroundColor: AppColors.primary,
+            ),
+            child: Text(
+              'ALL ($totalPoints)',
+              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5),
             ),
           ),
           _NavBtn(
             key: const Key('nav_next'),
             onTap: onNext,
-            child: Text('›',
-                style: TextStyle(
-                  fontSize: 22,
-                  color: (canNext || !isNew)
-                      ? AppColors.primary
-                      : AppColors.outlineVariant,
-                )),
-          ),
-          TextButton(
-            onPressed: onOpenHistory,
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.fromLTRB(4, 4, 10, 4),
-              foregroundColor: AppColors.primary,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: Text(
-              'All ($totalPoints)',
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-            ),
+            child: Icon(Icons.chevron_right, color: (canNext || !isNew) ? AppColors.primary : AppColors.outlineVariant),
           ),
         ],
       ),
@@ -332,108 +337,11 @@ class _NavBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 44,
-      height: 44,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(100),
-        child: Center(child: child),
-      ),
-    );
-  }
-}
-
-class _EditingPill extends StatelessWidget {
-  final int pointIdx;
-  final bool autoSaveFlash;
-  final VoidCallback onNewPoint;
-
-  const _EditingPill({
-    required this.pointIdx,
-    required this.autoSaveFlash,
-    required this.onNewPoint,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 250),
-      color: autoSaveFlash ? AppColors.chipYes : AppColors.tertiaryContainer,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              autoSaveFlash
-                  ? '✓ Auto-saved'
-                  : 'Editing point #${pointIdx + 1} — changes save instantly',
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.onSurface,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: onNewPoint,
-            style: TextButton.styleFrom(
-              backgroundColor: AppColors.surfaceVariant,
-              foregroundColor: AppColors.onSurface,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              minimumSize: const Size(0, 26),
-              shape: const StadiumBorder(),
-            ),
-            child: const Text('+ New point',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BottomCta extends StatelessWidget {
-  final bool isNew;
-  final VoidCallback onNext;
-
-  const _BottomCta({required this.isNew, required this.onNext});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.fromLTRB(
-        16,
-        10,
-        16,
-        14 + MediaQuery.of(context).padding.bottom,
-      ),
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: AppColors.outlineVariant)),
-        color: AppColors.surface,
-      ),
-      child: SizedBox(
-        width: double.infinity,
-        height: isNew ? 56 : 52,
-        child: FilledButton(
-          key: const Key('bottom_cta_button'),
-          onPressed: onNext,
-          style: FilledButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: AppColors.onPrimary,
-            shape: const StadiumBorder(),
-            elevation: 2,
-          ),
-          child: Text(
-            isNew ? 'Next Point →' : '← Back to current point',
-            style: TextStyle(
-              fontSize: isNew ? 16 : 15,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-            ),
-          ),
-        ),
-      ),
+    return IconButton(
+      onPressed: onTap,
+      icon: child,
+      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+      padding: EdgeInsets.zero,
     );
   }
 }

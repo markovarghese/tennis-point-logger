@@ -163,7 +163,6 @@ class _AppShellState extends State<_AppShell> {
   Future<void> _autoSync(TennisPoint point, {int? index}) async {
     final s = _settings;
     if (s.gsState != GsState.connected) return;
-    if (!s.autoSyncAfterPoint) return;
 
     final dateStr = DateFormat('dd MMM yyyy HH:mm').format(_matchDate);
     final row = point.toCsvRow(dateStr, _opponentName);

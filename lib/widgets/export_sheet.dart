@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/point.dart';
@@ -86,68 +87,68 @@ class _ExportSheetState extends State<_ExportSheet> {
   Widget build(BuildContext context) {
     final dateLabel = DateFormat('d MMM yyyy').format(widget.matchDate);
 
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+    return GlassPanel(
+      borderRadius: 28,
+      opacity: 0.8,
       padding: EdgeInsets.only(
-        left: 20, right: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+        top: 12,
+        left: 20,
+        right: 20,
+        bottom: MediaQuery.of(context).padding.bottom + 24,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 12),
-          Center(
-            child: Container(
-              width: 40, height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
-              ),
+          Container(
+            width: 40, height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.outlineVariant,
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const SizedBox(height: 16),
-          const Text('Export Match',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700,
-              color: AppColors.onSurface)),
+          const SizedBox(height: 32),
+          Text(
+            'EXPORT MATCH',
+            style: GoogleFonts.hankenGrotesk(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: AppColors.primary,
+              letterSpacing: 1,
+            ),
+          ),
           const SizedBox(height: 4),
           Text(
-            '${widget.opponentName} · $dateLabel · ${widget.points.length} pts',
-            style: const TextStyle(fontSize: 13, color: AppColors.onSurfaceVar),
+            '${widget.opponentName} · $dateLabel',
+            style: const TextStyle(fontSize: 14, color: AppColors.onSurfaceVariant, fontWeight: FontWeight.w500),
           ),
-          const SizedBox(height: 16),
-
+          const SizedBox(height: 32),
           _ExportAction(
-            icon: '📋',
-            label: _copied ? '✓ Copied!' : 'Copy as CSV',
+            icon: Icons.copy,
+            label: _copied ? 'COPIED!' : 'COPY AS CSV',
             sub: 'Paste into any spreadsheet',
-            accent: _copied,
+            active: _copied,
             onTap: _copyCSV,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           _ExportAction(
-            icon: '💾',
-            label: 'Save to device',
+            icon: Icons.save_alt,
+            label: 'SAVE TO DEVICE',
             sub: 'Download .csv file',
-            accent: false,
+            active: false,
             onTap: _saveToDevice,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 32),
           SizedBox(
             width: double.infinity,
-            height: 48,
-            child: FilledButton.tonal(
+            height: 56,
+            child: OutlinedButton(
               onPressed: () => Navigator.pop(context),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.surfaceVariant,
-                foregroundColor: AppColors.onSurface,
-                shape: const StadiumBorder(),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: AppColors.primary, width: 2),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                foregroundColor: AppColors.primary,
               ),
-              child: const Text('Close',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              child: const Text('CLOSE', style: TextStyle(fontWeight: FontWeight.w700)),
             ),
           ),
         ],
@@ -157,13 +158,14 @@ class _ExportSheetState extends State<_ExportSheet> {
 }
 
 class _ExportAction extends StatelessWidget {
-  final String icon, label, sub;
-  final bool accent;
+  final IconData icon;
+  final String label, sub;
+  final bool active;
   final VoidCallback onTap;
 
   const _ExportAction({
     required this.icon, required this.label, required this.sub,
-    required this.accent, required this.onTap,
+    required this.active, required this.onTap,
   });
 
   @override
@@ -172,23 +174,34 @@ class _ExportAction extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: accent ? AppColors.primaryContainer : AppColors.surfaceVariant,
-          borderRadius: BorderRadius.circular(16),
+          color: active ? AppColors.primary : AppColors.outlineVariant.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
           children: [
-            Text(icon, style: const TextStyle(fontSize: 24)),
+            Icon(icon, color: active ? Colors.white : AppColors.primary, size: 28),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(label, style: const TextStyle(
-                    fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.onSurface)),
-                  Text(sub, style: const TextStyle(
-                    fontSize: 12, color: AppColors.onSurfaceVar)),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: active ? Colors.white : AppColors.onSurface,
+                    ),
+                  ),
+                  Text(
+                    sub,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: active ? Colors.white70 : AppColors.onSurfaceVariant,
+                    ),
+                  ),
                 ],
               ),
             ),

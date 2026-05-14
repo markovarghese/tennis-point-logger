@@ -93,12 +93,8 @@ class MatchFormat {
 }
 
 class AppSettings {
-  final String playerName;
   final String formatPreset;
   final MatchFormat format;
-  final bool autoSyncAfterPoint;
-  final bool syncOnMatchEnd;
-  final bool keepOfflineCopy;
 
   // Google Sheets sync state
   final GsState gsState;
@@ -113,12 +109,8 @@ class AppSettings {
       'https://docs.google.com/spreadsheets/d/1008JYJw2JpdYMP2plfEfGABnEBzNGvryx6FJE08WoP4/edit?usp=sharing';
 
   const AppSettings({
-    this.playerName = 'Me',
     this.formatPreset = 'l7_short',
     this.format = const MatchFormat(),
-    this.autoSyncAfterPoint = true,
-    this.syncOnMatchEnd = false,
-    this.keepOfflineCopy = true,
     this.gsState = GsState.disconnected,
     this.gsAccount,
     this.sheetMode = SheetMode.create,
@@ -129,12 +121,8 @@ class AppSettings {
   });
 
   AppSettings copyWith({
-    String? playerName,
     String? formatPreset,
     MatchFormat? format,
-    bool? autoSyncAfterPoint,
-    bool? syncOnMatchEnd,
-    bool? keepOfflineCopy,
     GsState? gsState,
     String? gsAccount,
     bool clearGsAccount = false,
@@ -147,12 +135,8 @@ class AppSettings {
     bool clearSheetsId = false,
     String? templateUrl,
   }) => AppSettings(
-    playerName: playerName ?? this.playerName,
     formatPreset: formatPreset ?? this.formatPreset,
     format: format ?? this.format,
-    autoSyncAfterPoint: autoSyncAfterPoint ?? this.autoSyncAfterPoint,
-    syncOnMatchEnd: syncOnMatchEnd ?? this.syncOnMatchEnd,
-    keepOfflineCopy: keepOfflineCopy ?? this.keepOfflineCopy,
     gsState: gsState ?? this.gsState,
     gsAccount: clearGsAccount ? null : (gsAccount ?? this.gsAccount),
     sheetMode: sheetMode ?? this.sheetMode,
