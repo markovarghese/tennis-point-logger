@@ -88,6 +88,19 @@ Two sync modes:
 - **Create** (`SheetMode.create`): copies a Drive template into a user-chosen folder; syncs append/update rows in the `Logger` named sheet (row index = `point index + 2`).
 - **Existing** (`SheetMode.existing`): appends to a named range `LoggerData` in a user-chosen sheet; in-place updates are not supported for this mode.
 
+### Setup requirements for CI release signing
+
+The release workflow signs the APK using secrets stored in GitHub (**Settings → Secrets and variables → Actions**). These must be present for any release tag push to succeed:
+
+| Secret | Description |
+|---|---|
+| `KEYSTORE_BASE64` | Base64-encoded upload keystore. Generate with: `[Convert]::ToBase64String([IO.File]::ReadAllBytes("<path-to-keystore.jks>")) \| Set-Clipboard` |
+| `KEY_ALIAS` | Key alias inside the keystore (currently `upload`) |
+| `KEY_PASSWORD` | Password for the key |
+| `STORE_PASSWORD` | Password for the keystore |
+
+`android/key.properties` is gitignored — the CI workflow reconstructs it from these secrets at build time. Never commit `key.properties` to the repo.
+
 ### Setup requirements for Google features
 
 - Set `_webClientId` in `lib/services/google_auth_service.dart` to your OAuth Web client ID.
