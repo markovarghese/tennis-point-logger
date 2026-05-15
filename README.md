@@ -109,6 +109,13 @@ Tap the **<** button to step back to the previous point and edit it. All changes
 
 If you paused point-taking and the in-app score drifted from the real score, tap the **score panel** at the top of the Match screen to manually set the current score.
 
+## Contributing
+
+Contributions are welcome! Please read our **[CONTRIBUTING.md](CONTRIBUTING.md)** for details on our development workflow, commit message conventions, and the automated release process.
+
+### AI Agents
+If you are an AI assistant working in this repository, please also refer to **[CLAUDE.md](CLAUDE.md)** for specific environment and tool instructions.
+
 ## Project layout
 
 ```
@@ -288,29 +295,9 @@ Before publishing to Google Play, you need to **sign** the build:
 
 ## Releases
 
-Releases are published automatically when a version tag is pushed. The release workflow builds the APK, attaches it to a GitHub Release, and generates release notes from commits since the previous tag.
+Releases are published automatically when a version tag is pushed. Please refer to the **[Release Process](CONTRIBUTING.md#-release-process)** section in `CONTRIBUTING.md` for the exact steps to avoid CI failures.
 
-### Publishing a release
-
-1. Bump the version in `pubspec.yaml` — the version before the `+` is the public version, the number after is the build number:
-   ```yaml
-   version: 1.1.0+2
-   ```
-2. Commit and push to `main`:
-   ```bash
-   git add pubspec.yaml
-   git commit -m "chore: bump version to 1.1.0"
-   git push origin main
-   ```
-3. Tag the commit and push the tag:
-   ```bash
-   git tag v1.1.0
-   git push origin v1.1.0
-   ```
-
-The tag must match the version in `pubspec.yaml` (e.g. tag `v1.1.0` → `version: 1.1.0+N`). The workflow enforces this and will fail early if they don't match.
-
-The published APK appears under [Releases](https://github.com/markovarghese/tennis-point-logger/releases) and can be sideloaded directly onto an Android device.
+The published APK and AAB appear under [Releases](https://github.com/markovarghese/tennis-point-logger/releases).
 
 ## Deploying to iPhone
 
