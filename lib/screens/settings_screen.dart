@@ -225,17 +225,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
 
             // Google Account
-            _SectionHeader(icon: Icons.account_circle, title: 'Google Account', color: AppColors.primary),
+            const _SectionHeader(icon: Icons.account_circle, title: 'Google Account', color: AppColors.primary),
             _buildGoogleAccountSection(key: const Key('google_connected')),
 
             // Google Sheets Integration
             if (_s.gsState == GsState.connected) ...[
-              _SectionHeader(icon: Icons.table_chart, title: 'Google Sheets', color: AppColors.primary),
+              const _SectionHeader(icon: Icons.table_chart, title: 'Google Sheets', color: AppColors.primary),
               _buildSheetsIntegrationSection(),
             ],
 
             // Match Format
-            _SectionHeader(icon: Icons.scoreboard, title: 'Match Format', color: const Color(0xFFA23F00)),
+            const _SectionHeader(icon: Icons.scoreboard, title: 'Match Format', color: Color(0xFFA23F00)),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               child: Column(
@@ -317,7 +317,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
 
             // System
-            _SectionHeader(icon: Icons.info, title: 'System', color: AppColors.outline),
+            const _SectionHeader(icon: Icons.info, title: 'System', color: AppColors.outline),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               child: GlassPanel(
@@ -416,7 +416,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const Row(
                 children: [
                   Icon(Icons.cloud_off, color: AppColors.outline),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

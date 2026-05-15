@@ -17,7 +17,7 @@ ScoreState nextScore(ScoreState prev, TennisPoint point, MatchFormat fmt) {
   bool inFinalTb = prev.inFinalTb;
   bool? serverStartsTiebreak = prev.serverStartsTiebreak;
   final setsToWin = prev.setsToWin;
-  List<String> setResults = List.from(prev.setResults);
+  final List<String> setResults = List.from(prev.setResults);
 
   bool shouldStartSetTiebreak() {
     return myGames == fmt.setTiebreakAt && oppGames == fmt.setTiebreakAt;

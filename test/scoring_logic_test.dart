@@ -35,7 +35,7 @@ void main() {
   });
 
   group('No-Ad Scoring', () {
-    final fmt = const MatchFormat(scoringType: ScoringType.noAd);
+    const fmt = MatchFormat(scoringType: ScoringType.noAd);
 
     test('Deciding point at 3-3 (40-40)', () {
       // We need a state where points are 3-3
@@ -48,7 +48,7 @@ void main() {
   });
 
   group('Sudden Death Tiebreaker', () {
-    final fmt = const MatchFormat(tiebreakWinType: TiebreakWinType.suddenDeath, setTiebreakPts: 7);
+    const fmt = MatchFormat(tiebreakWinType: TiebreakWinType.suddenDeath, setTiebreakPts: 7);
 
     test('Wins at 7-6', () {
       var state = const ScoreState(myGames: 6, oppGames: 6, isTiebreak: true, myPts: 6, oppPts: 6);
