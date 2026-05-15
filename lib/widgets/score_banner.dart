@@ -14,131 +14,181 @@ class ScoreBanner extends StatelessWidget {
     this.onTap,
   });
 
-  Color get _bg {
-    if (!score.matchOver) return AppColors.primary;
-    return score.mySets >= score.setsToWin
-        ? const Color(0xFF1B5E20)
-        : const Color(0xFF7F0000);
-  }
-
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 400),
-        color: _bg,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Row(
-              children: [
-                // Me column
-                Expanded(child: _TeamScore(
-                  label: 'Me',
-                  sets: score.mySets,
-                  games: score.myGames,
-                )),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: GlassPanel(
+          borderRadius: 12,
+          padding: const EdgeInsets.all(12),
+          opacity: 0.8,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Player 1 (Me)
+              _PlayerScore(
+                label: 'Player',
+                points: score.matchOver ? (score.mySets >= score.setsToWin ? 'WIN' : 'LOSS') : score.ptScore.split('-')[0],
+                sets: score.mySets,
+                games: score.myGames,
+                color: AppColors.primary,
+              ),
 
-                // Centre
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (score.isTiebreak)
-                        const Text(
-                          'TIEBREAK',
-                          style: TextStyle(
-                            fontSize: 9, color: Color(0xB3FFFFFF),
-                            fontWeight: FontWeight.w700, letterSpacing: 0.5,
-                          ),
+              // VS / Status
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (score.isDecidingPoint)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.error,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'DECIDING POINT',
+                        style: TextStyle(
+                          fontSize: 8,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
                         ),
-                      if (score.matchOver)
-                        Text(
-                          score.mySets >= score.setsToWin ? '🏆 Won' : '😞 Lost',
-                          style: const TextStyle(
-                            fontSize: 13, fontWeight: FontWeight.w700,
-                            color: AppColors.primaryContainer, letterSpacing: 0.5,
-                          ),
-                        )
-                      else
-                        Text(
-                          score.ptScore,
-                          style: const TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.w600,
-                            color: AppColors.primaryContainer, letterSpacing: 1,
-                          ),
-                        ),
-                      if (onTap != null)
-                        const Text(
-                          'tap to edit',
-                          style: TextStyle(fontSize: 9, color: Color(0x66FFFFFF)),
-                        ),
-                    ],
+                      ),
+                    )
+                  else if (score.isTiebreak)
+                    Text(
+                      score.inFinalTb ? 'MATCH TIEBREAK' : 'TIEBREAK',
+                      style: const TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.outline,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  Text(
+                    'VS',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.outlineVariant.withValues(alpha: 0.5),
+                    ),
                   ),
-                ),
+                  if (onTap != null)
+                    const Text(
+                      'EDIT',
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.outline,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                ],
+              ),
 
-                // Opponent column
-                Expanded(child: _TeamScore(
-                  label: opponentName.isEmpty ? 'Opponent' : opponentName,
-                  sets: score.oppSets,
-                  games: score.oppGames,
-                )),
-              ],
-            ),
-
-          ],
+              // Player 2 (Opponent)
+              _PlayerScore(
+                label: opponentName.isEmpty ? 'Opponent' : opponentName,
+                points: score.matchOver ? (score.oppSets >= score.setsToWin ? 'WIN' : 'LOSS') : score.ptScore.split('-')[1],
+                sets: score.oppSets,
+                games: score.oppGames,
+                color: AppColors.secondaryContainer,
+                isRight: true,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _TeamScore extends StatelessWidget {
+class _PlayerScore extends StatelessWidget {
   final String label;
+  final String points;
   final int sets;
   final int games;
+  final Color color;
+  final bool isRight;
 
-  const _TeamScore({required this.label, required this.sets, required this.games});
+  const _PlayerScore({
+    required this.label,
+    required this.points,
+    required this.sets,
+    required this.games,
+    required this.color,
+    this.isRight = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: isRight ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
         Text(
-          label.toUpperCase(),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+          label,
           style: const TextStyle(
-            fontSize: 10, color: Color(0xB3FFFFFF),
-            fontWeight: FontWeight.w500, letterSpacing: 0.5,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: AppColors.onSurfaceVariant,
           ),
         ),
+        const SizedBox(height: 4),
         Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.baseline,
           textBaseline: TextBaseline.alphabetic,
           children: [
+            if (isRight) ...[
+              _SubScore(label: 'S', value: sets),
+              const SizedBox(width: 4),
+              _SubScore(label: 'G', value: games),
+              const SizedBox(width: 12),
+            ],
             Text(
-              '$sets',
-              style: const TextStyle(
-                fontSize: 30, fontWeight: FontWeight.w700, color: Colors.white, height: 1,
+              points,
+              style: scoreTextStyle.copyWith(
+                fontSize: 36,
+                color: color,
               ),
             ),
-            const SizedBox(width: 3),
-            Text(
-              '$games',
-              style: const TextStyle(
-                fontSize: 17, fontWeight: FontWeight.w400,
-                color: Color(0xCCFFFFFF),
-              ),
-            ),
+            if (!isRight) ...[
+              const SizedBox(width: 12),
+              _SubScore(label: 'S', value: sets),
+              const SizedBox(width: 4),
+              _SubScore(label: 'G', value: games),
+            ],
           ],
         ),
       ],
+    );
+  }
+}
+
+class _SubScore extends StatelessWidget {
+  final String label;
+  final int value;
+
+  const _SubScore({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppColors.outlineVariant.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        '$label:$value',
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: AppColors.onSurfaceVariant,
+        ),
+      ),
     );
   }
 }

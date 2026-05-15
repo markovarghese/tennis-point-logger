@@ -57,20 +57,21 @@ The app has **4 main screens** and **5 modal overlays**, navigated via a bottom 
 - Briefly changes to "✓ Auto-saved" (with a green background flash) after a change is saved.
 
 **Toggle Chips (the main logging interface):**
-- A scrollable list of 6 toggle chips. Each chip represents one data field for the current point.
-- Each chip shows the field's label and its current state: Yes (✓) / No (✗) / Unanswered (—).
-- Tapping a chip cycles its value.
-- The 6 fields in order:
-  1. **My Serve?** — Three states: Yes / No / Unanswered. Tracks who served.
-  2. **Server's First Serve?** — Two states: Yes / No.
-  3. **Server Double Fault?** — Two states: Yes / No.
-  4. **Server Won?** — Three states: Yes / No / Unanswered. The outcome of the point. Points left as Unanswered are skipped by the score engine.
-  5. **Loser's Forced Error?** — Two states: Yes / No.
-  6. **Loser's Forehand?** — Two states: Yes / No.
+- A grid of 6 toggle chips arranged in two columns. Each chip represents one data field for the current point.
+- Each chip shows the field's abbreviated label (e.g. "1st Serve?") and its current state: Yes (✓) or No (✗).
+- Tapping a chip's options sets its value.
+- The 6 fields arranged in the grid:
+  1. **My Serve?** — Two states: Yes / No. Tracks who served. Defaults to a calculated value based on the match state (flipping every game, inheriting during games).
+  2. **1st Serve?** — Two states: Yes / No. Defaults to Yes.
+  3. **Double Fault?** — Two states: Yes / No. Defaults to No.
+  4. **Server Won?** — Two states: Yes / No. The outcome of the point. Initially unselected for a new point. Selecting either Y or N automatically commits/saves the point and advances to a new one.
+  5. **Forced Error?** — Two states: Yes / No. Defaults to No.
+  6. **Loser Forehand?** — Two states: Yes / No. Defaults to Yes.
 
 **Primary action button:**
-- When on a new unsaved point: **"Next Point →"** — saves the current point and creates a new blank entry.
-- When reviewing a past point: **"← Back to current point"** — returns to the unsaved new entry.
+- When on a new unsaved point: **"NEW POINT"** button — disabled until the point is automatically saved (which happens when "Server Won?" is set).
+- When reviewing the most recently saved point: A **"DELETE"** button and a **"NEW POINT"** button (to return to the unsaved new entry).
+- When reviewing an older past point: A **"DELETE POINT"** button.
 
 ---
 
@@ -95,7 +96,7 @@ The app has **4 main screens** and **5 modal overlays**, navigated via a bottom 
   - "LF" — Loser Forehand
 
 **Point rows (most recent first):**
-- Each row shows: point number | timestamp + **compact score** (e.g., "0-0 0-0 15-0") | state indicator for each of the 6 fields (Yes / No / Unanswered)
+- Each row shows: point number | timestamp + **compact score** (e.g., "0-0 0-0 15-0") | state indicator for each of the 6 fields (Yes / No)
 - Tapping a row expands it to reveal an **Inline Editor** directly below the row.
 
 **Inline Editor (expands below a tapped row):**
@@ -118,11 +119,7 @@ The app has **4 main screens** and **5 modal overlays**, navigated via a bottom 
 
 ---
 
-### Section: Player
 
-- **Your Name** — Text field. Used to label the player's columns in Google Sheets exports (mapped to "My Serve?").
-
----
 
 ### Section: Google Account
 
@@ -174,16 +171,6 @@ This section manages the Google Sheets template used when creating new sheets. T
 
 ---
 
-### Section: Sync Behaviour (only visible when signed in)
-
-Three toggle switches:
-
-1. **Auto-sync after each point** — sends each row immediately when "Next Point" is tapped.
-2. **Sync on match end only** — batch uploads when the match finishes.
-3. **Keep offline copy** — stores all data locally even when synced.
-
----
-
 ### Section: Match Format
 
 Defines the scoring rules for the match.
@@ -195,15 +182,13 @@ Defines the scoring rules for the match.
 4. "Level 5"
 5. "Custom" — activates automatically when any custom option differs from a preset
 
-**Custom format controls** — 5 settings using segmented pickers:
+**Custom format controls** — 3 settings using number pickers and toggles:
 
 | Setting | Options |
 |---|---|
-| Sets in a match | 1 · 2 · 3 · 5 |
-| Games per set | 4 · 6 · 8 |
-| Deuce scoring | Ad · No-Ad |
-| Tiebreak points | 7 · 10 · None |
-| Final set | Full · 10-pt TB · 6-pt TB |
+| Sets to Win | Increment / Decrement number |
+| Games per Set | Increment / Decrement number |
+| Ad Scoring (Deuce) | Toggle switch |
 
 ---
 
@@ -325,5 +310,5 @@ App start
 
 - **No persistent storage of match data** — points live in memory during the session only; Google Sheets or CSV export is the only persistence.
 - **Auto-save when editing history** — changes to past points in the History Screen save immediately without a save button.
-- **Score is derived, not stored** — the score banner recalculates from the full point list every time; "Server Won?" being unanswered skips that point in score calculation.
-- **Three-state chips** — most fields support Yes / No / Unanswered (✓ / ✗ / —), letting the user log partial data and fill in details later.
+- **Score is derived, not stored** — the score banner recalculates from the full point list every time.
+- **Two-state chips only** — all fields support Yes (✓) or No (✗). "Server Won?" starts unselected for new points but becomes Yes/No once set, which automatically commits the point. "My Serve?" is pre-selected based on calculated match state.

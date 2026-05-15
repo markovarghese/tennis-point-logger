@@ -91,7 +91,7 @@ class _AppShellState extends State<_AppShell> {
     });
   }
 
-  void _handleNext() {
+  void _handleCommitCurrentPoint() {
     final pointToSave = TennisPoint(
       id: _currentPoint.id,
       createdAt: _currentPoint.createdAt,
@@ -111,6 +111,14 @@ class _AppShellState extends State<_AppShell> {
     _autoSync(pointToSave);
   }
 
+  void _handleDeletePoint(int idx) {
+    setState(() {
+      _points.removeAt(idx);
+      if (idx < _points.length) _recomputeScoresFrom(idx);
+    });
+    AppLog.info('match: point #${idx + 1} deleted');
+  }
+
   ScoreState get _prevScore =>
       _points.isEmpty ? _matchStartScore : (_points.last.score ?? _matchStartScore);
 
@@ -127,43 +135,66 @@ class _AppShellState extends State<_AppShell> {
 
   TennisPoint _freshPointWithDefaults() {
     final now = DateTime.now();
-    final myServe = _computeMyServeDefault();
     return TennisPoint(
       id: '${now.millisecondsSinceEpoch}_${now.microsecond}',
       createdAt: now,
-      myServe: myServe,
+      myServe: _computeMyServeDefault() ?? true,
       firstServe: true,
       doubleFault: false,
-      serverWon: myServe == null ? null : !myServe,
+      serverWon: null,
       forcedError: false,
       loserForehand: true,
     );
   }
 
-  bool? _computeMyServeDefault() {
+  bool _computeMyServeDefault() {
     final prev = _prevScore;
-    if (prev.isTiebreak) return null;
-    if (prev.ptScore == '0-0') {
-      // Start of a new game: find who served the previous game and flip.
-      for (var i = _points.length - 1; i >= 0; i--) {
-        if (_points[i].serverWon != null) {
-          final ms = _points[i].myServe;
-          return ms == null ? null : !ms;
+    if (prev.isTiebreak) {
+      // 1-2-2 Service Rotation logic
+      final n = prev.myPts + prev.oppPts + 1;
+      final starter = prev.serverStartsTiebreak ?? true;
+      if (n == 1) return starter;
+      final cycle = ((n - 2) / 2).floor();
+      return cycle.isEven ? !starter : starter;
+    }
+
+    if (prev.ptScore == '0-0' || prev.ptScore == 'Deuce' || prev.ptScore.startsWith('Adv')) {
+      // Check if we are at the very start of a game
+      if (prev.myPts == 0 && prev.oppPts == 0) {
+        // Find the most recently completed game or tiebreaker
+        for (var i = _points.length - 1; i >= 0; i--) {
+          final p = _points[i];
+          if (p.score == null) continue;
+          
+          // If the previous point ended a tiebreaker
+          if (i > 0) {
+             final pBefore = _points[i-1].score;
+             if (pBefore != null && pBefore.isTiebreak && !p.score!.isTiebreak) {
+                // Transition from tiebreaker: receiver of Point 1 serves next.
+                return !(pBefore.serverStartsTiebreak ?? true);
+             }
+          }
+          
+          // Standard game flip
+          if (p.score!.myPts == 0 && p.score!.oppPts == 0) {
+             // This point was the end of a game.
+             return !(p.myServe ?? true);
+          }
         }
+        return true;
       }
-      return null;
     }
-    // Mid-game: inherit from the most recent effective point.
+
+    // Mid-game: inherit from the most recent point.
     for (var i = _points.length - 1; i >= 0; i--) {
-      if (_points[i].serverWon != null) return _points[i].myServe;
+      if (_points[i].serverWon != null) return _points[i].myServe ?? true;
     }
-    return null;
+    return true;
   }
 
   Future<void> _autoSync(TennisPoint point, {int? index}) async {
     final s = _settings;
     if (s.gsState != GsState.connected) return;
-    if (!s.autoSyncAfterPoint) return;
 
     final dateStr = DateFormat('dd MMM yyyy HH:mm').format(_matchDate);
     final row = point.toCsvRow(dateStr, _opponentName);
@@ -235,12 +266,17 @@ class _AppShellState extends State<_AppShell> {
 
   ScoreState _applyOverride(ScoreOverride o) {
     final fmt = _settings.format;
-    final inFinalSet = (o.mySets + o.oppSets) == fmt.setsInMatch - 1;
-    final atTb = fmt.tiebreakPoints > 0 &&
-        o.myGames == fmt.gamesPerSet &&
-        o.oppGames == fmt.gamesPerSet;
-    final inFinalTb = atTb && inFinalSet && fmt.finalSet != FinalSetType.full;
+    final inFinalSet = (o.mySets + o.oppSets) == (fmt.matchFormatType == MatchFormatType.singleSet ? 0 : 2);
+    final atTb = o.myGames == fmt.setTiebreakAt && o.oppGames == fmt.setTiebreakAt;
+    final inFinalTb = atTb && inFinalSet && fmt.matchFormatType == MatchFormatType.bestOf3MatchTb;
     final inTiebreak = atTb && !inFinalTb;
+
+    // Reconstruct setResults from override
+    List<String> setResults = [];
+    // This is a simplification, we don't know if sets were won via TB
+    for (int i = 0; i < o.mySets; i++) setResults.add('${fmt.setWinThreshold}-${fmt.setWinThreshold - 2}');
+    for (int i = 0; i < o.oppSets; i++) setResults.add('${fmt.setWinThreshold - 2}-${fmt.setWinThreshold}');
+
     return ScoreState(
       mySets: o.mySets,
       oppSets: o.oppSets,
@@ -253,6 +289,7 @@ class _AppShellState extends State<_AppShell> {
       inFinalTb: inFinalTb,
       matchOver: o.mySets >= fmt.setsToWin || o.oppSets >= fmt.setsToWin,
       setsToWin: _matchStartScore.setsToWin,
+      setResults: setResults,
     );
   }
 
@@ -313,7 +350,8 @@ class _AppShellState extends State<_AppShell> {
       format: _settings.format,
       gsState: _settings.gsState,
       onFieldChange: _handleFieldChange,
-      onNext: _handleNext,
+      onCommitPoint: _handleCommitCurrentPoint,
+      onDeletePoint: _handleDeletePoint,
       onOpenHistory: () => setState(() => _screen = _AppScreen.history),
       onBackToSetup: () => setState(() => _screen = _AppScreen.setup),
       onExport: () => showExportSheet(context, _points, _opponentName, _matchDate),

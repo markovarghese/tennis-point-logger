@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../services/score_engine.dart';
 import '../models/match_settings.dart';
 import '../theme.dart';
@@ -47,109 +48,84 @@ class _ScoreOverrideSheetState extends State<_ScoreOverrideSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final setsToWin = widget.fmt.setsToWin;
-    final setOptions = List.generate(setsToWin, (i) => i);
-    final gameOptions = List.generate(widget.fmt.gamesPerSet + 1, (i) => i);
-
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+    return GlassPanel(
+      borderRadius: 28,
+      opacity: 0.9,
+      color: AppColors.primary,
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        top: 12,
+        left: 20,
+        right: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(height: 12),
           Container(
             width: 40, height: 4,
             decoration: BoxDecoration(
-              color: AppColors.outlineVariant,
+              color: Colors.white.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-            child: Row(
-              children: [
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Set Current Score',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700,
-                          color: AppColors.onSurface)),
-                      SizedBox(height: 2),
-                      Text('Tap a number to select it, then hit Apply',
-                        style: TextStyle(fontSize: 12, color: AppColors.onSurfaceVar)),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
-                  color: AppColors.onSurfaceVar,
-                ),
-              ],
+          const SizedBox(height: 24),
+          Text(
+            'SCORE OVERRIDE',
+            style: GoogleFonts.hankenGrotesk(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              letterSpacing: 1,
             ),
           ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              children: [
-                _PickerRow(
-                  leftLabel: 'My Sets', leftValue: mySets,
-                  rightLabel: 'Opp Sets', rightValue: oppSets,
-                  options: setOptions,
-                  onLeft: (v) => setState(() => mySets = v),
-                  onRight: (v) => setState(() => oppSets = v),
-                ),
-                const SizedBox(height: 8),
-                _PickerRow(
-                  leftLabel: 'My Games', leftValue: myGames,
-                  rightLabel: 'Opp Games', rightValue: oppGames,
-                  options: gameOptions,
-                  onLeft: (v) => setState(() => myGames = v),
-                  onRight: (v) => setState(() => oppGames = v),
-                ),
-              ],
-            ),
+          const SizedBox(height: 32),
+          _StepperRow(
+            label: 'MY SETS',
+            value: mySets,
+            onChanged: (v) => setState(() => mySets = v.clamp(0, 5)),
           ),
-          const SizedBox(height: 8),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
-            child: Text(
-              "New points will be appended — override doesn't delete history.",
-              style: TextStyle(fontSize: 11, color: AppColors.onSurfaceVar),
-              textAlign: TextAlign.center,
-            ),
+          const SizedBox(height: 16),
+          _StepperRow(
+            label: 'OPP SETS',
+            value: oppSets,
+            onChanged: (v) => setState(() => oppSets = v.clamp(0, 5)),
           ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: FilledButton(
-                onPressed: () => Navigator.pop(
-                  context,
-                  ScoreOverride(
-                    mySets: mySets, oppSets: oppSets,
-                    myGames: myGames, oppGames: oppGames,
-                  ),
+          const Divider(height: 32, color: Colors.white24),
+          _StepperRow(
+            label: 'MY GAMES',
+            value: myGames,
+            onChanged: (v) => setState(() => myGames = v.clamp(0, 12)),
+          ),
+          const SizedBox(height: 16),
+          _StepperRow(
+            label: 'OPP GAMES',
+            value: oppGames,
+            onChanged: (v) => setState(() => oppGames = v.clamp(0, 12)),
+          ),
+          const SizedBox(height: 40),
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: FilledButton(
+              onPressed: () => Navigator.pop(
+                context,
+                ScoreOverride(
+                  mySets: mySets, oppSets: oppSets,
+                  myGames: myGames, oppGames: oppGames,
                 ),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.onPrimary,
-                  shape: const StadiumBorder(),
-                ),
-                child: const Text('Apply Score Override',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
               ),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.secondaryContainer,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+              ),
+              child: const Text('APPLY OVERRIDE', style: TextStyle(fontWeight: FontWeight.w700)),
             ),
+          ),
+          const SizedBox(height: 12),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('CANCEL', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -157,106 +133,38 @@ class _ScoreOverrideSheetState extends State<_ScoreOverrideSheet> {
   }
 }
 
-class _PickerRow extends StatelessWidget {
-  final String leftLabel, rightLabel;
-  final int leftValue, rightValue;
-  final List<int> options;
-  final ValueChanged<int> onLeft, onRight;
-
-  const _PickerRow({
-    required this.leftLabel, required this.leftValue,
-    required this.rightLabel, required this.rightValue,
-    required this.options, required this.onLeft, required this.onRight,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceVariant,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      padding: const EdgeInsets.all(14),
-      child: Row(
-        children: [
-          Expanded(child: _NumPicker(label: leftLabel, value: leftValue,
-            options: options, onChange: onLeft)),
-          Container(width: 1, height: 60, color: AppColors.outlineVariant,
-            margin: const EdgeInsets.symmetric(horizontal: 8)),
-          Expanded(child: _NumPicker(label: rightLabel, value: rightValue,
-            options: options, onChange: onRight)),
-        ],
-      ),
-    );
-  }
-}
-
-class _NumPicker extends StatelessWidget {
+class _StepperRow extends StatelessWidget {
   final String label;
   final int value;
-  final List<int> options;
-  final ValueChanged<int> onChange;
+  final ValueChanged<int> onChanged;
 
-  const _NumPicker({
-    required this.label, required this.value,
-    required this.options, required this.onChange,
-  });
+  const _StepperRow({required this.label, required this.value, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Row(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(label, style: const TextStyle(
-              fontSize: 11, fontWeight: FontWeight.w600,
-              color: AppColors.onSurfaceVar, letterSpacing: 0.5,
-            )),
-            const SizedBox(width: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 1),
-              decoration: BoxDecoration(
-                color: AppColors.primaryContainer,
-                borderRadius: BorderRadius.circular(100),
-              ),
-              child: Text('$value', style: const TextStyle(
-                fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.primary,
-              )),
-            ),
-          ],
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 1),
+          ),
         ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 6, runSpacing: 6, alignment: WrapAlignment.center,
-          children: options.map((o) {
-            final sel = value == o;
-            return GestureDetector(
-              onTap: () => onChange(o),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 120),
-                width: 40, height: 40,
-                decoration: BoxDecoration(
-                  color: sel ? AppColors.primary : AppColors.surfaceVariant,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: sel ? AppColors.primary : Colors.transparent,
-                    width: 2,
-                  ),
-                  boxShadow: sel ? [const BoxShadow(
-                    color: AppColors.primaryContainer,
-                    blurRadius: 0, spreadRadius: 3,
-                  )] : null,
-                ),
-                alignment: Alignment.center,
-                child: Text('$o', style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: sel ? FontWeight.w700 : FontWeight.w400,
-                  color: sel ? AppColors.onPrimary : AppColors.onSurface,
-                )),
-              ),
-            );
-          }).toList(),
+        IconButton(
+          onPressed: () => onChanged(value - 1),
+          icon: const Icon(Icons.remove_circle_outline, color: Colors.white),
+        ),
+        Container(
+          width: 48,
+          alignment: Alignment.center,
+          child: Text(
+            '$value',
+            style: scoreTextStyle.copyWith(fontSize: 24, color: Colors.white),
+          ),
+        ),
+        IconButton(
+          onPressed: () => onChanged(value + 1),
+          icon: const Icon(Icons.add_circle_outline, color: Colors.white),
         ),
       ],
     );
