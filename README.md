@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/icon/app_icon.svg" alt="Tennis Point Logger logo" width="140" height="140" />
+  <img src="assets/icon/app_icon.png" alt="Tennis Point Logger logo" width="140" height="140" />
 </p>
 
 <h1 align="center">Tennis Point Logger</h1>
@@ -62,9 +62,9 @@ For every point, you tap one chip per question (Yes / No / unknown):
 
 **Features**
 
-- **Format-aware scoring engine** — sets, games, deuce/no-ad, configurable tiebreaks, and the USTA Junior presets (Levels 5/6/7 and Level 7 short sets)
-- **Live score banner** — tracks sets, games, and points; detects tiebreaks and match end; tap to manually override the running score
-- **History view** — review and edit any prior point; changes auto-save and propagate through the score engine
+- **Format-aware scoring engine** — sets, games, deuce/no-ad, configurable tiebreaks, and the full USTA Junior specification (9 tournament presets + custom formats)
+- **Live score banner** — tracks sets, games, and points; detects tiebreaks, match tiebreaks, and deciding points; tap to manually override the running score
+- **History view** — review and edit any prior point; changes auto-save and propagate through the score engine using USTA recording standards (e.g. 7-6(7-5))
 - **Match setup** — opponent name, match date, format preset
 - **Export** — copy as CSV, save to device, or sync to Google Sheets (see below)
 - **Google Sheets sync** — sign in with Google, pick a Drive folder for a new spreadsheet *or* an existing sheet, and choose your sync cadence (after every point, on match end, or offline-only)
