@@ -19,10 +19,10 @@ class ScoreBanner extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: GlassPanel(
           borderRadius: 12,
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(12),
           opacity: 0.8,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

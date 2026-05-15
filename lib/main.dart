@@ -147,24 +147,24 @@ class _AppShellState extends State<_AppShell> {
     );
   }
 
-  bool? _computeMyServeDefault() {
+  bool _computeMyServeDefault() {
     final prev = _prevScore;
-    if (prev.isTiebreak) return null;
+    if (prev.isTiebreak) return true;
     if (prev.ptScore == '0-0') {
       // Start of a new game: find who served the previous game and flip.
       for (var i = _points.length - 1; i >= 0; i--) {
         if (_points[i].serverWon != null) {
           final ms = _points[i].myServe;
-          return ms == null ? null : !ms;
+          return ms == null ? true : !ms;
         }
       }
-      return null;
+      return true;
     }
     // Mid-game: inherit from the most recent effective point.
     for (var i = _points.length - 1; i >= 0; i--) {
-      if (_points[i].serverWon != null) return _points[i].myServe;
+      if (_points[i].serverWon != null) return _points[i].myServe ?? true;
     }
-    return null;
+    return true;
   }
 
   Future<void> _autoSync(TennisPoint point, {int? index}) async {

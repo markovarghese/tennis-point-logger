@@ -215,20 +215,31 @@ class _EntryScreenState extends State<EntryScreen> {
               autoSaveFlash: _autoSaveFlash,
             ),
 
-          // Chips List
+          // Chips Grid
           Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+            child: GridView.builder(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                mainAxisExtent: 82,
+              ),
               itemCount: kFields.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 24),
               itemBuilder: (context, i) {
                 final f = kFields[i];
+                final label = switch (f.key) {
+                  'firstServe' => '1st Serve?',
+                  'doubleFault' => 'Double Fault?',
+                  'forcedError' => 'Forced Error?',
+                  'loserForehand' => 'Loser Forehand?',
+                  _ => f.label,
+                };
                 return TriChip(
                   key: Key('chip_${f.key}'),
                   value: getField(_displayPoint, f.key),
-                  label: f.label,
+                  label: label,
                   onChange: (v) => _handleChipChange(f.key, v),
-                  triState: f.key == 'serverWon' && getField(_displayPoint, 'serverWon') == null,
                 );
               },
             ),
@@ -249,7 +260,7 @@ class _EntryScreenState extends State<EntryScreen> {
         padding: EdgeInsets.fromLTRB(20, 0, 20, bottomPad),
         child: SizedBox(
           width: double.infinity,
-          height: 64,
+          height: 56,
           child: FilledButton(
             key: const Key('bottom_cta_button'),
             onPressed: null,
@@ -280,7 +291,7 @@ class _EntryScreenState extends State<EntryScreen> {
         child: Row(
           children: [
             SizedBox(
-              height: 64,
+              height: 56,
               child: OutlinedButton(
                 onPressed: _handleDelete,
                 style: OutlinedButton.styleFrom(
@@ -295,7 +306,7 @@ class _EntryScreenState extends State<EntryScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: SizedBox(
-                height: 64,
+                height: 56,
                 child: FilledButton(
                   key: const Key('bottom_cta_button'),
                   onPressed: () => _goTo(null),

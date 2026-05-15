@@ -5,14 +5,12 @@ class TriChip extends StatelessWidget {
   final bool? value;
   final String label;
   final ValueChanged<bool?> onChange;
-  final bool triState;
 
   const TriChip({
     super.key,
     required this.value,
     required this.label,
     required this.onChange,
-    this.triState = true,
   });
 
   @override
@@ -20,11 +18,14 @@ class TriChip extends StatelessWidget {
     final baseKey = key is ValueKey ? (key as ValueKey).value.toString() : null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          padding: const EdgeInsets.only(left: 4, bottom: 4),
           child: Text(
             label.toUpperCase(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
@@ -52,18 +53,6 @@ class TriChip extends StatelessWidget {
               activeColor: AppColors.secondaryContainer,
               onTap: () => onChange(false),
             ),
-            if (triState) ...[
-              const SizedBox(width: 8),
-              _ChipButton(
-                key: baseKey != null ? Key('${baseKey}_null') : null,
-                label: '',
-                icon: Icons.remove,
-                active: value == null,
-                activeColor: AppColors.outline,
-                isDashed: true,
-                onTap: () => onChange(null),
-              ),
-            ],
           ],
         ),
       ],
@@ -77,7 +66,6 @@ class _ChipButton extends StatelessWidget {
   final bool active;
   final Color activeColor;
   final VoidCallback onTap;
-  final bool isDashed;
 
   const _ChipButton({
     super.key,
@@ -86,7 +74,6 @@ class _ChipButton extends StatelessWidget {
     required this.active,
     required this.activeColor,
     required this.onTap,
-    this.isDashed = false,
   });
 
   @override
@@ -96,13 +83,10 @@ class _ChipButton extends StatelessWidget {
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          height: 64,
+          height: 48,
           decoration: BoxDecoration(
             color: active ? activeColor : const Color(0xFFEDEEED), // surface-container
             borderRadius: BorderRadius.circular(12),
-            border: isDashed && !active
-                ? Border.all(color: AppColors.outlineVariant, style: BorderStyle.solid) // Simplified dashed as Border doesn't support dash natively easily
-                : null,
             boxShadow: active
                 ? [
                     BoxShadow(
@@ -118,7 +102,7 @@ class _ChipButton extends StatelessWidget {
             children: [
               Icon(
                 icon,
-                size: 20,
+                size: 16,
                 color: active ? Colors.white : AppColors.onSurface,
               ),
               if (label.isNotEmpty) ...[
@@ -126,7 +110,7 @@ class _ChipButton extends StatelessWidget {
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: active ? Colors.white : AppColors.onSurface,
                   ),
