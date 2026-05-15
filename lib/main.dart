@@ -138,7 +138,7 @@ class _AppShellState extends State<_AppShell> {
     return TennisPoint(
       id: '${now.millisecondsSinceEpoch}_${now.microsecond}',
       createdAt: now,
-      myServe: _computeMyServeDefault() ?? true,
+      myServe: _computeMyServeDefault(),
       firstServe: true,
       doubleFault: false,
       serverWon: null,
@@ -272,10 +272,14 @@ class _AppShellState extends State<_AppShell> {
     final inTiebreak = atTb && !inFinalTb;
 
     // Reconstruct setResults from override
-    List<String> setResults = [];
+    final List<String> setResults = [];
     // This is a simplification, we don't know if sets were won via TB
-    for (int i = 0; i < o.mySets; i++) setResults.add('${fmt.setWinThreshold}-${fmt.setWinThreshold - 2}');
-    for (int i = 0; i < o.oppSets; i++) setResults.add('${fmt.setWinThreshold - 2}-${fmt.setWinThreshold}');
+    for (int i = 0; i < o.mySets; i++) {
+      setResults.add('${fmt.setWinThreshold}-${fmt.setWinThreshold - 2}');
+    }
+    for (int i = 0; i < o.oppSets; i++) {
+      setResults.add('${fmt.setWinThreshold - 2}-${fmt.setWinThreshold}');
+    }
 
     return ScoreState(
       mySets: o.mySets,

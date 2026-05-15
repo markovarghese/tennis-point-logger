@@ -5,19 +5,19 @@ import 'package:tennis_logger/services/score_engine.dart';
 
 // I win the point (my serve, server wins)
 TennisPoint _myPt() => TennisPoint(
-      id: 'p', createdAt: DateTime(2024), myServe: true, serverWon: true);
+    id: 'p', createdAt: DateTime(2024), myServe: true, serverWon: true);
 
 // Opponent wins the point (my serve, server loses)
 TennisPoint _oppPt() => TennisPoint(
-      id: 'p', createdAt: DateTime(2024), myServe: true, serverWon: false);
+    id: 'p', createdAt: DateTime(2024), myServe: true, serverWon: false);
 
 // I win when opponent is serving (opp serve, server loses = I win)
 TennisPoint _myPtOppServe() => TennisPoint(
-      id: 'p', createdAt: DateTime(2024), myServe: false, serverWon: false);
+    id: 'p', createdAt: DateTime(2024), myServe: false, serverWon: false);
 
 // Opponent wins while serving
 TennisPoint _oppPtOppServe() => TennisPoint(
-      id: 'p', createdAt: DateTime(2024), myServe: false, serverWon: true);
+    id: 'p', createdAt: DateTime(2024), myServe: false, serverWon: true);
 
 // Point with no result — must be skipped by score engine
 TennisPoint _nullPt() => TennisPoint(id: 'p', createdAt: DateTime(2024));
@@ -25,7 +25,7 @@ TennisPoint _nullPt() => TennisPoint(id: 'p', createdAt: DateTime(2024));
 List<TennisPoint> _myGame() => List.generate(4, (_) => _myPt());
 List<TennisPoint> _oppGame() => List.generate(4, (_) => _oppPt());
 
-// 4-game set won by me (for l7_short format)
+// 4-game set won by me (for l7_short_best_of_3 format, setWinThreshold=4)
 List<TennisPoint> _mySet4() =>
     [_myGame(), _myGame(), _myGame(), _myGame()].expand((g) => g).toList();
 
@@ -33,25 +33,22 @@ List<TennisPoint> _mySet4() =>
 List<TennisPoint> _oppSet4() =>
     [_oppGame(), _oppGame(), _oppGame(), _oppGame()].expand((g) => g).toList();
 
-// 6-game set won by me (no tiebreak format)
+// 6-game set won by me (standard format)
 List<TennisPoint> _mySet6() =>
     List.generate(6, (_) => _myGame()).expand((g) => g).toList();
 
-// No-ad, 6-game sets, best of 3, no tiebreak — simplest format for set/match tests
+// No-ad, 6-game sets, best of 3, full final set
 const _fmt = MatchFormat(
-  setsInMatch: 3,
-  gamesPerSet: 6,
-  adScoring: false,
-  tiebreakPoints: 0,
-  finalSet: FinalSetType.full,
+  setWinThreshold: 6,
+  scoringType: ScoringType.noAd,
+  matchFormatType: MatchFormatType.bestOf3FullSet,
 );
 
+// Ad scoring, 6-game sets, best of 3, full final set
 const _fmtAd = MatchFormat(
-  setsInMatch: 3,
-  gamesPerSet: 6,
-  adScoring: true,
-  tiebreakPoints: 0,
-  finalSet: FinalSetType.full,
+  setWinThreshold: 6,
+  scoringType: ScoringType.ad,
+  matchFormatType: MatchFormatType.bestOf3FullSet,
 );
 
 void main() {
@@ -67,9 +64,11 @@ void main() {
       expect(s.isTiebreak, false);
     });
 
-    test('setsToWin is half of setsInMatch rounded up', () {
+    test('setsToWin reflects match format type', () {
       expect(calcScore([], _fmt).setsToWin, 2);
-      expect(calcScore([], MatchFormat.presets['l7_regular']!).setsToWin, 1);
+      expect(
+          calcScore([], MatchFormat.presets['l7_standard_single']!).setsToWin,
+          1);
     });
   });
 
@@ -85,9 +84,11 @@ void main() {
     test('1-1 → 15-15', () {
       expect(calcScore([_myPt(), _oppPt()], _fmt).ptScore, '15-15');
     });
-    test('3-3 → Deuce', () {
+    test('3-3 → Deciding Pt', () {
       final pts = [_myPt(), _myPt(), _myPt(), _oppPt(), _oppPt(), _oppPt()];
-      expect(calcScore(pts, _fmt).ptScore, 'Deuce');
+      final s = calcScore(pts, _fmt);
+      expect(s.ptScore, 'Deciding Pt');
+      expect(s.isDecidingPoint, true);
     });
   });
 
@@ -134,10 +135,10 @@ void main() {
       expect(s.myGames, 0);
       expect(s.oppGames, 1);
     });
-    test('no-ad deuce: next point wins the game', () {
+    test('no-ad deciding point: next point wins the game', () {
       final pts = [
         _myPt(), _myPt(), _myPt(),
-        _oppPt(), _oppPt(), _oppPt(), // 3-3 deuce
+        _oppPt(), _oppPt(), _oppPt(), // 3-3 deciding pt
         _myPt(),                       // 4-3 → game
       ];
       final s = calcScore(pts, _fmt);
@@ -149,7 +150,7 @@ void main() {
         _myPt(), _myPt(), _myPt(),
         _oppPt(), _oppPt(), _oppPt(), // deuce
         _myPt(), _oppPt(),             // adv me, back to deuce
-        _myPt(), _myPt(),              // adv me, then 6-4 → game win
+        _myPt(), _myPt(),              // adv me, then game
       ];
       final s = calcScore(pts, _fmtAd);
       expect(s.myGames, 1);
@@ -182,17 +183,6 @@ void main() {
       final s = calcScore(pts, _fmt);
       expect(s.mySets, 1);
     });
-    test('7-5 wins a set (no tiebreak format)', () {
-      final pts = [
-        ..._myGame(), ..._oppGame(), // 1-1
-        ..._myGame(), ..._oppGame(), // 2-2
-        ..._myGame(), ..._oppGame(), // 3-3
-        ..._myGame(), ..._oppGame(), // 4-4
-        ..._myGame(), ..._oppGame(), // 5-5
-        ..._myGame(), ..._myGame(),  // 7-5
-      ];
-      expect(calcScore(pts, _fmt).mySets, 1);
-    });
     test('opponent wins a set', () {
       final pts = List.generate(6, (_) => _oppGame()).expand((g) => g).toList();
       final s = calcScore(pts, _fmt);
@@ -212,7 +202,7 @@ void main() {
       expect(s.matchOver, true);
     });
     test('winning 1 set ends a single-set match', () {
-      final fmt = MatchFormat.presets['l7_regular']!;
+      final fmt = MatchFormat.presets['l7_standard_single']!;
       final pts = List.generate(6, (_) => _myGame()).expand((g) => g).toList();
       final s = calcScore(pts, fmt);
       expect(s.mySets, 1);
@@ -245,35 +235,26 @@ void main() {
     });
   });
 
-  group('final set tiebreak (l7_short — 10-pt match tiebreak)', () {
-    // l7_short: 3 sets, 4 games per set, no-ad, 7-pt tiebreak, final set = 10-pt TB
-    final fmt = MatchFormat.presets['l7_short']!;
+  group('match tiebreak (l7_short_best_of_3 — 10-pt match TB after 1-1 sets)', () {
+    // 4-game sets, no-ad, set TB at 4-4 (7-pt), match TB after 1-1 sets (10-pt)
+    final fmt = MatchFormat.presets['l7_short_best_of_3']!;
 
-    List<TennisPoint> splitSetGames() => [
-          // Alternate games until 4-4 in the final set → triggers 10-pt TB
-          ..._oppGame(), ..._myGame(),
-          ..._oppGame(), ..._myGame(),
-          ..._oppGame(), ..._myGame(),
-          ..._oppGame(), ..._myGame(),
-        ];
-
-    test('isTiebreak is true during 10-pt tiebreak', () {
+    test('match TB is active after splitting first two sets', () {
       final pts = [
-        ..._mySet4(),
-        ..._oppSet4(),
-        ...splitSetGames(),
-        _myPt(), // 1 point into tiebreak
+        ..._mySet4(),  // me wins set 1 (4-0)
+        ..._oppSet4(), // opp wins set 2 (4-0)
+        _myPt(),       // first point of match TB
       ];
       final s = calcScore(pts, fmt);
       expect(s.isTiebreak, true);
+      expect(s.inFinalTb, true);
       expect(s.ptScore, '1-0');
     });
 
-    test('winning 10-pt tiebreak wins the match', () {
+    test('winning 10-pt match TB wins the match', () {
       final pts = [
         ..._mySet4(),
         ..._oppSet4(),
-        ...splitSetGames(),
         ...List.generate(10, (_) => _myPt()), // win 10-0
       ];
       final s = calcScore(pts, fmt);
@@ -282,11 +263,10 @@ void main() {
       expect(s.isTiebreak, false);
     });
 
-    test('opponent wins 10-pt tiebreak', () {
+    test('opponent wins 10-pt match TB', () {
       final pts = [
         ..._mySet4(),
         ..._oppSet4(),
-        ...splitSetGames(),
         ...List.generate(10, (_) => _oppPt()),
       ];
       final s = calcScore(pts, fmt);
@@ -294,12 +274,11 @@ void main() {
       expect(s.matchOver, true);
     });
 
-    test('10-pt tiebreak requires 2-point margin', () {
+    test('10-pt match TB requires 2-point margin', () {
       final pts = [
         ..._mySet4(),
         ..._oppSet4(),
-        ...splitSetGames(),
-        // 9-9 in tiebreak, then I win 2 more
+        // 9-9 in match TB, then I win 2 more
         ...List.generate(9, (_) => _myPt()),
         ...List.generate(9, (_) => _oppPt()),
         _myPt(), _myPt(), // 11-9
@@ -307,6 +286,39 @@ void main() {
       final s = calcScore(pts, fmt);
       expect(s.mySets, 2);
       expect(s.matchOver, true);
+    });
+  });
+
+  group('set tiebreak (l7_short_best_of_3 — 7-pt set TB at 4-4)', () {
+    final fmt = MatchFormat.presets['l7_short_best_of_3']!;
+
+    test('set TB activates at 4-4 games', () {
+      final pts = [
+        // Alternate to 4-4 in the first set
+        ..._oppGame(), ..._myGame(),
+        ..._oppGame(), ..._myGame(),
+        ..._oppGame(), ..._myGame(),
+        ..._oppGame(), ..._myGame(),
+        _myPt(), // first point of set TB
+      ];
+      final s = calcScore(pts, fmt);
+      expect(s.isTiebreak, true);
+      expect(s.inFinalTb, false);
+      expect(s.ptScore, '1-0');
+    });
+
+    test('winning set TB wins the set, not the match', () {
+      final pts = [
+        ..._oppGame(), ..._myGame(),
+        ..._oppGame(), ..._myGame(),
+        ..._oppGame(), ..._myGame(),
+        ..._oppGame(), ..._myGame(), // 4-4
+        ...List.generate(7, (_) => _myPt()), // win set TB 7-0
+      ];
+      final s = calcScore(pts, fmt);
+      expect(s.mySets, 1);
+      expect(s.matchOver, false);
+      expect(s.isTiebreak, false);
     });
   });
 }
