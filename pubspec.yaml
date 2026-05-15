@@ -1,7 +1,7 @@
 name: tennis_logger
 description: Tennis point logging app with Material You design.
 publish_to: 'none'
-version: 2.0.1+12
+version: 2.0.2+13
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
