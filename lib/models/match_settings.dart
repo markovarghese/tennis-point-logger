@@ -1,4 +1,8 @@
-enum FinalSetType { full, tenPointTb, sixPointTb }
+enum ScoringType { ad, noAd }
+
+enum TiebreakWinType { twoPointMargin, suddenDeath }
+
+enum MatchFormatType { bestOf3MatchTb, bestOf3FullSet, singleSet }
 
 enum GsState { disconnected, connecting, connected }
 
@@ -18,77 +22,135 @@ class DriveSheet {
 }
 
 class MatchFormat {
-  final int setsInMatch;
-  final int gamesPerSet;
-  final bool adScoring;
-  final int tiebreakPoints; // 0 = no tiebreak
-  final FinalSetType finalSet;
+  final int setWinThreshold;
+  final int setTiebreakAt;
+  final ScoringType scoringType;
+  final TiebreakWinType tiebreakWinType;
+  final MatchFormatType matchFormatType;
+  final int setTiebreakPts;
+  final int matchTiebreakPts;
 
   const MatchFormat({
-    this.setsInMatch = 3,
-    this.gamesPerSet = 4,
-    this.adScoring = false,
-    this.tiebreakPoints = 7,
-    this.finalSet = FinalSetType.tenPointTb,
+    this.setWinThreshold = 6,
+    this.setTiebreakAt = 6,
+    this.scoringType = ScoringType.noAd,
+    this.tiebreakWinType = TiebreakWinType.twoPointMargin,
+    this.matchFormatType = MatchFormatType.singleSet,
+    this.setTiebreakPts = 7,
+    this.matchTiebreakPts = 10,
   });
 
-  int get setsToWin => (setsInMatch / 2).ceil();
+  int get setsToWin => matchFormatType == MatchFormatType.singleSet ? 1 : 2;
 
   MatchFormat copyWith({
-    int? setsInMatch,
-    int? gamesPerSet,
-    bool? adScoring,
-    int? tiebreakPoints,
-    FinalSetType? finalSet,
-  }) => MatchFormat(
-    setsInMatch: setsInMatch ?? this.setsInMatch,
-    gamesPerSet: gamesPerSet ?? this.gamesPerSet,
-    adScoring: adScoring ?? this.adScoring,
-    tiebreakPoints: tiebreakPoints ?? this.tiebreakPoints,
-    finalSet: finalSet ?? this.finalSet,
-  );
+    int? setWinThreshold,
+    int? setTiebreakAt,
+    ScoringType? scoringType,
+    TiebreakWinType? tiebreakWinType,
+    MatchFormatType? matchFormatType,
+    int? setTiebreakPts,
+    int? matchTiebreakPts,
+  }) =>
+      MatchFormat(
+        setWinThreshold: setWinThreshold ?? this.setWinThreshold,
+        setTiebreakAt: setTiebreakAt ?? this.setTiebreakAt,
+        scoringType: scoringType ?? this.scoringType,
+        tiebreakWinType: tiebreakWinType ?? this.tiebreakWinType,
+        matchFormatType: matchFormatType ?? this.matchFormatType,
+        setTiebreakPts: setTiebreakPts ?? this.setTiebreakPts,
+        matchTiebreakPts: matchTiebreakPts ?? this.matchTiebreakPts,
+      );
 
   static const Map<String, MatchFormat> presets = {
-    'l7_short': MatchFormat(
-      setsInMatch: 3, gamesPerSet: 4, adScoring: false,
-      tiebreakPoints: 7, finalSet: FinalSetType.tenPointTb,
+    'l1_l4_full': MatchFormat(
+      setWinThreshold: 6,
+      setTiebreakAt: 6,
+      scoringType: ScoringType.ad,
+      tiebreakWinType: TiebreakWinType.twoPointMargin,
+      matchFormatType: MatchFormatType.bestOf3FullSet,
     ),
-    'l7_regular': MatchFormat(
-      setsInMatch: 1, gamesPerSet: 6, adScoring: false,
-      tiebreakPoints: 7, finalSet: FinalSetType.full,
+    'l1_l4_match_tb': MatchFormat(
+      setWinThreshold: 6,
+      setTiebreakAt: 6,
+      scoringType: ScoringType.ad,
+      tiebreakWinType: TiebreakWinType.twoPointMargin,
+      matchFormatType: MatchFormatType.bestOf3MatchTb,
     ),
-    'l6': MatchFormat(
-      setsInMatch: 3, gamesPerSet: 6, adScoring: false,
-      tiebreakPoints: 7, finalSet: FinalSetType.tenPointTb,
+    'l5_l6_standard': MatchFormat(
+      setWinThreshold: 6,
+      setTiebreakAt: 6,
+      scoringType: ScoringType.noAd,
+      tiebreakWinType: TiebreakWinType.twoPointMargin,
+      matchFormatType: MatchFormatType.bestOf3MatchTb,
     ),
-    'l5': MatchFormat(
-      setsInMatch: 3, gamesPerSet: 6, adScoring: true,
-      tiebreakPoints: 7, finalSet: FinalSetType.full,
+    'l7_standard_single': MatchFormat(
+      setWinThreshold: 6,
+      setTiebreakAt: 6,
+      scoringType: ScoringType.noAd,
+      tiebreakWinType: TiebreakWinType.twoPointMargin,
+      matchFormatType: MatchFormatType.singleSet,
+    ),
+    'l7_short_best_of_3': MatchFormat(
+      setWinThreshold: 4,
+      setTiebreakAt: 4,
+      scoringType: ScoringType.noAd,
+      tiebreakWinType: TiebreakWinType.twoPointMargin,
+      matchFormatType: MatchFormatType.bestOf3MatchTb,
+    ),
+    'l7_timed_standard': MatchFormat(
+      setWinThreshold: 6,
+      setTiebreakAt: 6,
+      scoringType: ScoringType.noAd,
+      tiebreakWinType: TiebreakWinType.suddenDeath,
+      matchFormatType: MatchFormatType.singleSet,
+    ),
+    'l7_timed_short': MatchFormat(
+      setWinThreshold: 4,
+      setTiebreakAt: 4,
+      scoringType: ScoringType.noAd,
+      tiebreakWinType: TiebreakWinType.suddenDeath,
+      matchFormatType: MatchFormatType.singleSet,
+    ),
+    'pro_set_standard': MatchFormat(
+      setWinThreshold: 8,
+      setTiebreakAt: 8,
+      scoringType: ScoringType.noAd,
+      tiebreakWinType: TiebreakWinType.twoPointMargin,
+      matchFormatType: MatchFormatType.singleSet,
+    ),
+    'pro_set_sudden_death': MatchFormat(
+      setWinThreshold: 8,
+      setTiebreakAt: 8,
+      scoringType: ScoringType.noAd,
+      tiebreakWinType: TiebreakWinType.suddenDeath,
+      matchFormatType: MatchFormatType.singleSet,
     ),
   };
 
   static const Map<String, String> presetLabels = {
-    'l7_short':   'Level 7 — Short Sets',
-    'l7_regular': 'Level 7 — One Set',
-    'l6':         'Level 6',
-    'l5':         'Level 5',
-    'custom':     'Custom',
+    'l1_l4_full': 'Level 1-4 (Full 3rd Set)',
+    'l1_l4_match_tb': 'Level 1-4 (Match Tiebreak)',
+    'l5_l6_standard': 'Level 5-6 Standard',
+    'l7_standard_single': 'Level 7 Standard (Single Set)',
+    'l7_short_best_of_3': 'Level 7 Short Sets (Best of 3)',
+    'l7_timed_standard': 'Level 7 Timed (Standard Set)',
+    'l7_timed_short': 'Level 7 Timed (Short Set)',
+    'pro_set_standard': 'Pro-Set (Standard)',
+    'pro_set_sudden_death': 'Pro-Set (Sudden Death)',
+    'custom': 'Custom',
   };
 
   static const Map<String, String> presetSubtitles = {
-    'l7_short':   'First to 4 games · 4–4 = 7-pt set TB · split sets = match TB',
-    'l7_regular': '1 set to 6 games · 7-pt tiebreak at 6-all · no-ad',
-    'l6':         '6-game sets · best of 3 · 7-pt tiebreak · no-ad',
-    'l5':         '6-game sets · best of 3 · 7-pt tiebreak · ad scoring',
-    'custom':     'Configure manually below',
-  };
-
-  static const Map<String, String> presetNotes = {
-    'l7_short': 'Short sets to 4. At 4–4 a 7-pt set tiebreak. Split sets → 10-pt match tiebreak.',
-    'l7_regular': 'Single set to 6 games. 7-pt tiebreak at 6-all.',
-    'l6': '',
-    'l5': '',
-    'custom': '',
+    'l1_l4_full': '6-game sets · Ad scoring · Full 3rd set',
+    'l1_l4_match_tb': '6-game sets · Ad scoring · 10-pt Match TB',
+    'l5_l6_standard': '6-game sets · No-Ad scoring · 10-pt Match TB',
+    'l7_standard_single': '6-game sets · No-Ad scoring · Single Set',
+    'l7_short_best_of_3': '4-game Short Sets · No-Ad scoring · 10-pt Match TB',
+    'l7_timed_standard': '6-game sets · No-Ad scoring · Sudden Death TB',
+    'l7_timed_short': '4-game sets · No-Ad scoring · Sudden Death TB',
+    'pro_set_standard': '8-game set · No-Ad scoring · 7-pt TB at 8-8',
+    'pro_set_sudden_death': '8-game set · No-Ad scoring · Sudden Death TB at 8-8',
+    'custom': 'Configure manually below',
   };
 }
 
@@ -109,7 +171,7 @@ class AppSettings {
       'https://docs.google.com/spreadsheets/d/1008JYJw2JpdYMP2plfEfGABnEBzNGvryx6FJE08WoP4/edit?usp=sharing';
 
   const AppSettings({
-    this.formatPreset = 'l7_short',
+    this.formatPreset = 'l7_standard_single',
     this.format = const MatchFormat(),
     this.gsState = GsState.disconnected,
     this.gsAccount,
@@ -134,15 +196,16 @@ class AppSettings {
     String? sheetsId,
     bool clearSheetsId = false,
     String? templateUrl,
-  }) => AppSettings(
-    formatPreset: formatPreset ?? this.formatPreset,
-    format: format ?? this.format,
-    gsState: gsState ?? this.gsState,
-    gsAccount: clearGsAccount ? null : (gsAccount ?? this.gsAccount),
-    sheetMode: sheetMode ?? this.sheetMode,
-    selectedFolder: clearSelectedFolder ? null : (selectedFolder ?? this.selectedFolder),
-    selectedSheet: clearSelectedSheet ? null : (selectedSheet ?? this.selectedSheet),
-    sheetsId: clearSheetsId ? null : (sheetsId ?? this.sheetsId),
-    templateUrl: templateUrl ?? this.templateUrl,
-  );
+  }) =>
+      AppSettings(
+        formatPreset: formatPreset ?? this.formatPreset,
+        format: format ?? this.format,
+        gsState: gsState ?? this.gsState,
+        gsAccount: clearGsAccount ? null : (gsAccount ?? this.gsAccount),
+        sheetMode: sheetMode ?? this.sheetMode,
+        selectedFolder: clearSelectedFolder ? null : (selectedFolder ?? this.selectedFolder),
+        selectedSheet: clearSelectedSheet ? null : (selectedSheet ?? this.selectedSheet),
+        sheetsId: clearSheetsId ? null : (sheetsId ?? this.sheetsId),
+        templateUrl: templateUrl ?? this.templateUrl,
+      );
 }

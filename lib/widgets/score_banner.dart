@@ -40,10 +40,27 @@ class ScoreBanner extends StatelessWidget {
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (score.isTiebreak)
-                    const Text(
-                      'TIEBREAK',
-                      style: TextStyle(
+                  if (score.isDecidingPoint)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.error,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'DECIDING POINT',
+                        style: TextStyle(
+                          fontSize: 8,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    )
+                  else if (score.isTiebreak)
+                    Text(
+                      score.inFinalTb ? 'MATCH TIEBREAK' : 'TIEBREAK',
+                      style: const TextStyle(
                         fontSize: 9,
                         fontWeight: FontWeight.w700,
                         color: AppColors.outline,

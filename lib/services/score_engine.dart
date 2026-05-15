@@ -15,12 +15,43 @@ ScoreState nextScore(ScoreState prev, TennisPoint point, MatchFormat fmt) {
   int myPts = prev.myPts, oppPts = prev.oppPts;
   bool inTiebreak = prev.isTiebreak && !prev.inFinalTb;
   bool inFinalTb = prev.inFinalTb;
+  bool? serverStartsTiebreak = prev.serverStartsTiebreak;
   final setsToWin = prev.setsToWin;
+  List<String> setResults = List.from(prev.setResults);
 
-  bool isFinalSet() => (mySets + oppSets) == fmt.setsInMatch - 1;
-  bool shouldStartTiebreak() {
-    if (fmt.tiebreakPoints == 0) return false;
-    return myGames == fmt.gamesPerSet && oppGames == fmt.gamesPerSet;
+  bool shouldStartSetTiebreak() {
+    return myGames == fmt.setTiebreakAt && oppGames == fmt.setTiebreakAt;
+  }
+
+  void winSet(bool won, {String? tbScore}) {
+    if (won) {
+      mySets++;
+      if (tbScore != null) {
+        setResults.add('7-6($tbScore)');
+      } else {
+        setResults.add('$myGames-$oppGames');
+      }
+    } else {
+      oppSets++;
+      if (tbScore != null) {
+        setResults.add('6-7($tbScore)');
+      } else {
+        setResults.add('$myGames-$oppGames');
+      }
+    }
+    myGames = 0;
+    oppGames = 0;
+    myPts = 0;
+    oppPts = 0;
+    inTiebreak = false;
+    inFinalTb = false;
+    serverStartsTiebreak = null;
+    
+    // Check for Match Tiebreak transition
+    if (fmt.matchFormatType == MatchFormatType.bestOf3MatchTb && mySets == 1 && oppSets == 1) {
+      inFinalTb = true;
+      // Note: serverStartsTiebreak will be set at the end of nextScore
+    }
   }
 
   void winGame(bool won) {
@@ -31,24 +62,15 @@ ScoreState nextScore(ScoreState prev, TennisPoint point, MatchFormat fmt) {
     }
     myPts = 0;
     oppPts = 0;
-    final myWonSet = myGames >= fmt.gamesPerSet && myGames - oppGames >= 2;
-    final oppWonSet = oppGames >= fmt.gamesPerSet && oppGames - myGames >= 2;
+
+    final myWonSet = (myGames >= fmt.setWinThreshold && myGames - oppGames >= 2);
+    final oppWonSet = (oppGames >= fmt.setWinThreshold && oppGames - myGames >= 2);
+
     if (myWonSet || oppWonSet) {
-      if (myWonSet) {
-        mySets++;
-      } else {
-        oppSets++;
-      }
-      myGames = 0;
-      oppGames = 0;
-      inTiebreak = false;
-      inFinalTb = false;
-    } else if (shouldStartTiebreak()) {
-      if (isFinalSet() && fmt.finalSet == FinalSetType.tenPointTb) {
-        inFinalTb = true;
-      } else {
-        inTiebreak = true;
-      }
+      winSet(myWonSet);
+    } else if (shouldStartSetTiebreak()) {
+      inTiebreak = true;
+      serverStartsTiebreak = point.myServe;
     }
   }
 
@@ -58,21 +80,28 @@ ScoreState nextScore(ScoreState prev, TennisPoint point, MatchFormat fmt) {
     } else {
       oppPts++;
     }
-    final tbTarget = fmt.finalSet == FinalSetType.sixPointTb ? 6 : 10;
-    if (myPts >= tbTarget && myPts - oppPts >= 2) {
-      mySets++;
+    final tbTarget = fmt.matchTiebreakPts;
+    final isSuddenDeath = fmt.tiebreakWinType == TiebreakWinType.suddenDeath;
+
+    bool myWon = false, oppWon = false;
+    if (isSuddenDeath) {
+      myWon = myPts >= tbTarget;
+      oppWon = oppPts >= tbTarget;
+    } else {
+      myWon = myPts >= tbTarget && myPts - oppPts >= 2;
+      oppWon = oppPts >= tbTarget && oppPts - myPts >= 2;
+    }
+
+    if (myWon || oppWon) {
+      mySets += myWon ? 1 : 0;
+      oppSets += oppWon ? 1 : 0;
+      setResults.add('1-0($myPts-$oppPts)');
       myGames = 0;
       oppGames = 0;
       myPts = 0;
       oppPts = 0;
       inFinalTb = false;
-    } else if (oppPts >= tbTarget && oppPts - myPts >= 2) {
-      oppSets++;
-      myGames = 0;
-      oppGames = 0;
-      myPts = 0;
-      oppPts = 0;
-      inFinalTb = false;
+      serverStartsTiebreak = null;
     }
   } else if (inTiebreak) {
     if (iWon) {
@@ -80,66 +109,83 @@ ScoreState nextScore(ScoreState prev, TennisPoint point, MatchFormat fmt) {
     } else {
       oppPts++;
     }
-    final tbTarget = fmt.tiebreakPoints;
-    if (myPts >= tbTarget && myPts - oppPts >= 2) {
-      winGame(true);
-    } else if (oppPts >= tbTarget && oppPts - myPts >= 2) {
-      winGame(false);
-    }
-  } else if (!fmt.adScoring) {
-    if (iWon) {
-      myPts++;
-    } else {
-      oppPts++;
-    }
-    if (myPts >= 4 && myPts > oppPts) {
-      winGame(true);
-    } else if (oppPts >= 4 && oppPts > myPts) {
-      winGame(false);
-    }
-  } else {
-    if (iWon) {
-      myPts++;
-    } else {
-      oppPts++;
-    }
-    if (myPts >= 4 && myPts - oppPts >= 2) {
-      winGame(true);
-    } else if (oppPts >= 4 && oppPts - myPts >= 2) {
-      winGame(false);
-    }
-  }
+    final tbTarget = fmt.setTiebreakPts;
+    final isSuddenDeath = fmt.tiebreakWinType == TiebreakWinType.suddenDeath;
 
-  if (!inTiebreak && !inFinalTb && shouldStartTiebreak()) {
-    if (isFinalSet() && fmt.finalSet != FinalSetType.full) {
-      inFinalTb = true;
-      myGames = 0;
-      oppGames = 0;
-    } else {
-      inTiebreak = true;
-    }
-  }
-
-  final String ptScore;
-  if (inFinalTb || inTiebreak) {
-    ptScore = '$myPts-$oppPts';
-  } else if (!fmt.adScoring) {
-    const labels = [0, 15, 30, 40];
-    if (myPts == 3 && oppPts == 3) {
-      ptScore = 'Deuce';
-    } else {
-      ptScore = '${labels[myPts.clamp(0, 3)]}-${labels[oppPts.clamp(0, 3)]}';
-    }
-  } else {
-    if (myPts >= 3 && oppPts >= 3) {
-      if (myPts == oppPts) {
-        ptScore = 'Deuce';
-      } else {
-        ptScore = myPts > oppPts ? 'Adv Me' : 'Adv Opp';
+    if (isSuddenDeath) {
+      if (myPts >= tbTarget) {
+        winSet(true, tbScore: '$myPts-$oppPts');
+      } else if (oppPts >= tbTarget) {
+        winSet(false, tbScore: '$myPts-$oppPts');
       }
     } else {
+      if (myPts >= tbTarget && myPts - oppPts >= 2) {
+        winSet(true, tbScore: '$myPts-$oppPts');
+      } else if (oppPts >= tbTarget && oppPts - myPts >= 2) {
+        winSet(false, tbScore: '$myPts-$oppPts');
+      }
+    }
+  } else {
+    // Normal game
+    if (iWon) {
+      myPts++;
+    } else {
+      oppPts++;
+    }
+
+    if (fmt.scoringType == ScoringType.noAd) {
+      if (myPts >= 4 && myPts > oppPts) {
+        winGame(true);
+      } else if (oppPts >= 4 && oppPts > myPts) {
+        winGame(false);
+      }
+    } else {
+      if (myPts >= 4 && myPts - oppPts >= 2) {
+        winGame(true);
+      } else if (oppPts >= 4 && oppPts - myPts >= 2) {
+        winGame(false);
+      }
+    }
+  }
+
+  // Final check for transitions that might have been triggered by manual point logging
+  // (e.g. if ScoreState was manipulated or point was the first of the set)
+  if (!inTiebreak && !inFinalTb) {
+     if (fmt.matchFormatType == MatchFormatType.bestOf3MatchTb && mySets == 1 && oppSets == 1 && myGames == 0 && oppGames == 0) {
+        inFinalTb = true;
+     } else if (shouldStartSetTiebreak()) {
+        inTiebreak = true;
+     }
+     if ((inFinalTb || inTiebreak) && serverStartsTiebreak == null) {
+        serverStartsTiebreak = point.myServe;
+     }
+  }
+
+  // Format point score
+  String ptScoreStr;
+  bool isDecidingPoint = false;
+  if (inFinalTb || inTiebreak) {
+    ptScoreStr = '$myPts-$oppPts';
+  } else {
+    if (fmt.scoringType == ScoringType.noAd) {
       const labels = [0, 15, 30, 40];
-      ptScore = '${labels[myPts.clamp(0, 3)]}-${labels[oppPts.clamp(0, 3)]}';
+      if (myPts >= 3 && oppPts >= 3) {
+        ptScoreStr = 'Deciding Pt';
+        isDecidingPoint = true;
+      } else {
+        ptScoreStr = '${labels[myPts.clamp(0, 3)]}-${labels[oppPts.clamp(0, 3)]}';
+      }
+    } else {
+      if (myPts >= 3 && oppPts >= 3) {
+        if (myPts == oppPts) {
+          ptScoreStr = 'Deuce';
+        } else {
+          ptScoreStr = myPts > oppPts ? 'Adv Me' : 'Adv Opp';
+        }
+      } else {
+        const labels = [0, 15, 30, 40];
+        ptScoreStr = '${labels[myPts.clamp(0, 3)]}-${labels[oppPts.clamp(0, 3)]}';
+      }
     }
   }
 
@@ -150,17 +196,21 @@ ScoreState nextScore(ScoreState prev, TennisPoint point, MatchFormat fmt) {
     oppGames: oppGames,
     myPts: myPts,
     oppPts: oppPts,
-    ptScore: ptScore,
+    ptScore: ptScoreStr,
     matchOver: mySets >= setsToWin || oppSets >= setsToWin,
     isTiebreak: inTiebreak || inFinalTb,
     inFinalTb: inFinalTb,
     setsToWin: setsToWin,
+    isDecidingPoint: isDecidingPoint,
+    serverStartsTiebreak: serverStartsTiebreak,
+    setResults: setResults,
   );
 }
 
 ScoreState calcScore(List<TennisPoint> points, MatchFormat fmt) {
-  return points.fold(
-    ScoreState(setsToWin: fmt.setsToWin),
-    (prev, point) => nextScore(prev, point, fmt),
-  );
+  var state = ScoreState(setsToWin: fmt.setsToWin);
+  for (final p in points) {
+    state = nextScore(state, p, fmt);
+  }
+  return state;
 }

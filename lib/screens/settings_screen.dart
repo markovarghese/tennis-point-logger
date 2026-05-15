@@ -22,12 +22,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _templateEditing = false;
   bool _creatingSheet = false;
   late TextEditingController _templateCtrl;
+  String _lastPresetId = 'l7_standard_single';
 
   @override
   void initState() {
     super.initState();
     _s = widget.settings;
     _templateCtrl = TextEditingController(text: _s.templateUrl);
+    if (_s.formatPreset != 'custom') {
+      _lastPresetId = _s.formatPreset;
+    }
   }
 
   @override
@@ -60,7 +64,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final fmt = MatchFormat.presets[id];
     if (fmt == null) return;
     AppLog.info('settings: format preset → $id');
+    _lastPresetId = id;
     _update(_s.copyWith(formatPreset: id, format: fmt));
+  }
+
+  void _switchToCustom() {
+    if (_s.formatPreset == 'custom') return;
+    AppLog.info('settings: format preset → custom (inherited from $_lastPresetId)');
+    final lastFmt = MatchFormat.presets[_lastPresetId] ?? const MatchFormat();
+    _update(_s.copyWith(formatPreset: 'custom', format: lastFmt));
   }
 
   Future<void> _connectGoogle() async {
@@ -223,76 +235,84 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ],
 
             // Match Format
-            _SectionHeader(icon: Icons.scoreboard, title: 'Match Format', color: AppColors.secondaryContainer),
+            _SectionHeader(icon: Icons.scoreboard, title: 'Match Format', color: const Color(0xFFA23F00)),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              child: GlassPanel(
-                borderRadius: 12,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'PRESETS',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.onSurfaceVariant,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: ['l7_short', 'l7_regular', 'l6', 'l5', 'custom'].map((id) {
-                        final selected = _s.formatPreset == id;
-                        return ChoiceChip(
-                          label: Text(MatchFormat.presetLabels[id] ?? id),
-                          selected: selected,
-                          onSelected: id == 'custom' ? null : (val) => _applyPreset(id),
-                          selectedColor: AppColors.secondaryContainer,
-                          labelStyle: TextStyle(
-                            color: selected ? Colors.white : AppColors.onSurface,
-                            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                          ),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          side: BorderSide(color: selected ? AppColors.secondaryContainer : AppColors.outlineVariant),
-                          showCheckmark: false,
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 24),
-                    _MatchParamRow(
-                      label: 'Sets to Win',
-                      value: '${_s.format.setsToWin}',
-                      onAdd: () => _updateCustomFormat(_s.format.copyWith(setsInMatch: _s.format.setsInMatch + 2)),
-                      onRemove: () => _updateCustomFormat(_s.format.copyWith(setsInMatch: _s.format.setsInMatch - 2)),
-                    ),
-                    const SizedBox(height: 16),
-                    _MatchParamRow(
-                      label: 'Games per Set',
-                      value: '${_s.format.gamesPerSet}',
-                      onAdd: () => _updateCustomFormat(_s.format.copyWith(gamesPerSet: _s.format.gamesPerSet + 1)),
-                      onRemove: () => _updateCustomFormat(_s.format.copyWith(gamesPerSet: _s.format.gamesPerSet - 1)),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
+              child: Column(
+                children: [
+                   GlassPanel(
+                    borderRadius: 12,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Expanded(
-                          child: Text(
-                            'Ad Scoring (Deuce)',
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.onSurface),
+                        const Text(
+                          'USTA TOURNAMENT LEVEL',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.onSurfaceVariant,
+                            letterSpacing: 1,
                           ),
                         ),
-                        Switch(
-                          value: _s.format.adScoring,
-                          onChanged: (val) => _updateCustomFormat(_s.format.copyWith(adScoring: val)),
-                          activeTrackColor: AppColors.primary,
+                        const SizedBox(height: 12),
+                        ...MatchFormat.presets.keys.map((id) => _PresetCard(
+                          title: MatchFormat.presetLabels[id] ?? id,
+                          subtitle: MatchFormat.presetSubtitles[id] ?? '',
+                          selected: _s.formatPreset == id,
+                          onTap: () => _applyPreset(id),
+                        )),
+                        _PresetCard(
+                          title: 'Custom',
+                          subtitle: '',
+                          selected: _s.formatPreset == 'custom',
+                          onTap: _switchToCustom,
                         ),
+                        
+                        if (_s.formatPreset == 'custom') ...[
+                          const Divider(height: 32),
+                          _MatchParamRow(
+                            label: 'Sets to Win',
+                            value: '${_s.format.setsToWin}',
+                            onAdd: () => _updateCustomFormat(_s.format.matchFormatType == MatchFormatType.singleSet 
+                                ? _s.format.copyWith(matchFormatType: MatchFormatType.bestOf3MatchTb)
+                                : _s.format),
+                            onRemove: () => _updateCustomFormat(_s.format.matchFormatType != MatchFormatType.singleSet
+                                ? _s.format.copyWith(matchFormatType: MatchFormatType.singleSet)
+                                : _s.format),
+                          ),
+                          const SizedBox(height: 16),
+                          _MatchParamRow(
+                            label: 'Games per Set',
+                            value: '${_s.format.setWinThreshold}',
+                            onAdd: () => _updateCustomFormat(_s.format.copyWith(setWinThreshold: _s.format.setWinThreshold + 1, setTiebreakAt: _s.format.setTiebreakAt + 1)),
+                            onRemove: () => _updateCustomFormat(_s.format.copyWith(setWinThreshold: _s.format.setWinThreshold - 1, setTiebreakAt: _s.format.setTiebreakAt - 1)),
+                          ),
+                          const SizedBox(height: 16),
+                          _SegmentedRow(
+                            label: 'Deuce Scoring',
+                            options: const ['Ad', 'No-Ad'],
+                            selectedIdx: _s.format.scoringType == ScoringType.ad ? 0 : 1,
+                            onChanged: (idx) => _updateCustomFormat(_s.format.copyWith(scoringType: idx == 0 ? ScoringType.ad : ScoringType.noAd)),
+                          ),
+                          const SizedBox(height: 16),
+                          _SegmentedRow(
+                            label: 'Set Tie-breaker',
+                            options: const ['Tie-breaker', 'Win by 2'],
+                            selectedIdx: _s.format.tiebreakWinType == TiebreakWinType.twoPointMargin ? 0 : 1,
+                            onChanged: (idx) => _updateCustomFormat(_s.format.copyWith(tiebreakWinType: idx == 0 ? TiebreakWinType.twoPointMargin : TiebreakWinType.suddenDeath)),
+                          ),
+                          const SizedBox(height: 16),
+                          _SegmentedRow(
+                            label: 'Match Tie-breaker (Final Set)',
+                            options: const ['Match TB', 'Standard', 'Win by 2'],
+                            selectedIdx: _s.format.matchFormatType == MatchFormatType.bestOf3MatchTb ? 0 : (_s.format.matchFormatType == MatchFormatType.bestOf3FullSet ? 1 : 2),
+                            onChanged: (idx) => _updateCustomFormat(_s.format.copyWith(matchFormatType: idx == 0 ? MatchFormatType.bestOf3MatchTb : (idx == 1 ? MatchFormatType.bestOf3FullSet : MatchFormatType.singleSet))),
+                          ),
+                        ],
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
 
@@ -312,7 +332,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.onSurfaceVariant),
                         ),
                         Text(
-                          'v1.6.2',
+                          'v2.4.1',
                           style: GoogleFonts.jetBrainsMono(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.onSurface),
                         ),
                       ],
@@ -576,6 +596,120 @@ class _SectionHeader extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _PresetCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _PresetCard({
+    required this.title,
+    required this.subtitle,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary.withValues(alpha: 0.05) : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: selected ? AppColors.primary : AppColors.outlineVariant.withValues(alpha: 0.5),
+            width: selected ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                color: selected ? AppColors.primary : AppColors.onSurface,
+              ),
+            ),
+            if (subtitle.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: const TextStyle(fontSize: 12, color: AppColors.onSurfaceVariant),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SegmentedRow extends StatelessWidget {
+  final String label;
+  final List<String> options;
+  final int selectedIdx;
+  final ValueChanged<int> onChanged;
+
+  const _SegmentedRow({
+    required this.label,
+    required this.options,
+    required this.selectedIdx,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: AppColors.onSurfaceVariant),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          height: 36,
+          decoration: BoxDecoration(
+            color: AppColors.surfaceVariant,
+            borderRadius: BorderRadius.circular(100),
+          ),
+          padding: const EdgeInsets.all(4),
+          child: Row(
+            children: List.generate(options.length, (i) {
+              final sel = i == selectedIdx;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => onChanged(i),
+                  child: Container(
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: sel ? AppColors.primary : Colors.transparent,
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: Text(
+                      options[i],
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: sel ? Colors.white : AppColors.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
+      ],
     );
   }
 }

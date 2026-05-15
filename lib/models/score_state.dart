@@ -10,6 +10,9 @@ class ScoreState {
   final bool isTiebreak;
   final bool inFinalTb;
   final int setsToWin;
+  final bool isDecidingPoint;
+  final bool? serverStartsTiebreak; // null if not in TB, true if 'Me', false if 'Opp'
+  final List<String> setResults;
 
   const ScoreState({
     this.mySets = 0,
@@ -23,6 +26,9 @@ class ScoreState {
     this.isTiebreak = false,
     this.inFinalTb = false,
     this.setsToWin = 1,
+    this.isDecidingPoint = false,
+    this.serverStartsTiebreak,
+    this.setResults = const [],
   });
 
   ScoreState copyWith({
@@ -37,6 +43,9 @@ class ScoreState {
     bool? isTiebreak,
     bool? inFinalTb,
     int? setsToWin,
+    bool? isDecidingPoint,
+    bool? Function()? serverStartsTiebreak,
+    List<String>? setResults,
   }) =>
       ScoreState(
         mySets: mySets ?? this.mySets,
@@ -50,7 +59,16 @@ class ScoreState {
         isTiebreak: isTiebreak ?? this.isTiebreak,
         inFinalTb: inFinalTb ?? this.inFinalTb,
         setsToWin: setsToWin ?? this.setsToWin,
+        isDecidingPoint: isDecidingPoint ?? this.isDecidingPoint,
+        serverStartsTiebreak:
+            serverStartsTiebreak != null ? serverStartsTiebreak() : this.serverStartsTiebreak,
+        setResults: setResults ?? this.setResults,
       );
 
-  String get compactLabel => '$mySets-$oppSets  $myGames-$oppGames  $ptScore';
+  String get compactLabel {
+    final setsPart = setResults.isEmpty ? '' : '${setResults.join('  ')}  ';
+    final gamesPart = matchOver ? '' : '$myGames-$oppGames  ';
+    final ptsPart = matchOver ? '' : ptScore;
+    return '$setsPart$gamesPart$ptsPart'.trim();
+  }
 }

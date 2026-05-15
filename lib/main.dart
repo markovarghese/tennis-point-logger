@@ -149,18 +149,43 @@ class _AppShellState extends State<_AppShell> {
 
   bool _computeMyServeDefault() {
     final prev = _prevScore;
-    if (prev.isTiebreak) return true;
-    if (prev.ptScore == '0-0') {
-      // Start of a new game: find who served the previous game and flip.
-      for (var i = _points.length - 1; i >= 0; i--) {
-        if (_points[i].serverWon != null) {
-          final ms = _points[i].myServe;
-          return ms == null ? true : !ms;
-        }
-      }
-      return true;
+    if (prev.isTiebreak) {
+      // 1-2-2 Service Rotation logic
+      final n = prev.myPts + prev.oppPts + 1;
+      final starter = prev.serverStartsTiebreak ?? true;
+      if (n == 1) return starter;
+      final cycle = ((n - 2) / 2).floor();
+      return cycle.isEven ? !starter : starter;
     }
-    // Mid-game: inherit from the most recent effective point.
+
+    if (prev.ptScore == '0-0' || prev.ptScore == 'Deuce' || prev.ptScore.startsWith('Adv')) {
+      // Check if we are at the very start of a game
+      if (prev.myPts == 0 && prev.oppPts == 0) {
+        // Find the most recently completed game or tiebreaker
+        for (var i = _points.length - 1; i >= 0; i--) {
+          final p = _points[i];
+          if (p.score == null) continue;
+          
+          // If the previous point ended a tiebreaker
+          if (i > 0) {
+             final pBefore = _points[i-1].score;
+             if (pBefore != null && pBefore.isTiebreak && !p.score!.isTiebreak) {
+                // Transition from tiebreaker: receiver of Point 1 serves next.
+                return !(pBefore.serverStartsTiebreak ?? true);
+             }
+          }
+          
+          // Standard game flip
+          if (p.score!.myPts == 0 && p.score!.oppPts == 0) {
+             // This point was the end of a game.
+             return !(p.myServe ?? true);
+          }
+        }
+        return true;
+      }
+    }
+
+    // Mid-game: inherit from the most recent point.
     for (var i = _points.length - 1; i >= 0; i--) {
       if (_points[i].serverWon != null) return _points[i].myServe ?? true;
     }
@@ -241,12 +266,17 @@ class _AppShellState extends State<_AppShell> {
 
   ScoreState _applyOverride(ScoreOverride o) {
     final fmt = _settings.format;
-    final inFinalSet = (o.mySets + o.oppSets) == fmt.setsInMatch - 1;
-    final atTb = fmt.tiebreakPoints > 0 &&
-        o.myGames == fmt.gamesPerSet &&
-        o.oppGames == fmt.gamesPerSet;
-    final inFinalTb = atTb && inFinalSet && fmt.finalSet != FinalSetType.full;
+    final inFinalSet = (o.mySets + o.oppSets) == (fmt.matchFormatType == MatchFormatType.singleSet ? 0 : 2);
+    final atTb = o.myGames == fmt.setTiebreakAt && o.oppGames == fmt.setTiebreakAt;
+    final inFinalTb = atTb && inFinalSet && fmt.matchFormatType == MatchFormatType.bestOf3MatchTb;
     final inTiebreak = atTb && !inFinalTb;
+
+    // Reconstruct setResults from override
+    List<String> setResults = [];
+    // This is a simplification, we don't know if sets were won via TB
+    for (int i = 0; i < o.mySets; i++) setResults.add('${fmt.setWinThreshold}-${fmt.setWinThreshold - 2}');
+    for (int i = 0; i < o.oppSets; i++) setResults.add('${fmt.setWinThreshold - 2}-${fmt.setWinThreshold}');
+
     return ScoreState(
       mySets: o.mySets,
       oppSets: o.oppSets,
@@ -259,6 +289,7 @@ class _AppShellState extends State<_AppShell> {
       inFinalTb: inFinalTb,
       matchOver: o.mySets >= fmt.setsToWin || o.oppSets >= fmt.setsToWin,
       setsToWin: _matchStartScore.setsToWin,
+      setResults: setResults,
     );
   }
 
