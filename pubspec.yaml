@@ -1,7 +1,7 @@
 name: tennis_logger
 description: Tennis point logging app with Material You design.
 publish_to: 'none'
-version: 2.0.3+14
+version: 2.1.0+15
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -34,7 +34,7 @@ flutter_launcher_icons:
   android: "ic_launcher"
   ios: false
   image_path: "assets/icon/app_icon.png"
-  adaptive_icon_background: "#154212"
+  adaptive_icon_background: "#FDFDFD"
   adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
   min_sdk_android: 21
 
