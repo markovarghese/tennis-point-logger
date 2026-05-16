@@ -11,6 +11,13 @@ To start a session directly in a worktree from the CLI:
 claude --worktree <task-name>
 ```
 
+When creating a worktree manually (outside Claude Code), use `scripts/New-Worktree.ps1` instead of `git worktree add` directly — it copies the gitignored dev files (`android/local.properties`, `android/app/google-services.json`) into the new worktree automatically:
+```powershell
+.\scripts\New-Worktree.ps1 -TaskName <task-name> -Branch <feature-branch-name>
+```
+
+**Maintenance:** When adding a new gitignored file required for local development, add it to `scripts/New-Worktree.ps1`, `CONTRIBUTING.md`, and this note.
+
 ## Branch & PR Workflow
 
 - Default branch is `main` (not `master`)
