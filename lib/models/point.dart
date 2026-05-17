@@ -97,6 +97,12 @@ class TennisPoint {
         boolVal(serverWon),
         boolVal(forcedError),
         boolVal(loserForehand),
+        score?.mySets.toString() ?? '',
+        score?.oppSets.toString() ?? '',
+        score?.myGames.toString() ?? '',
+        score?.oppGames.toString() ?? '',
+        score?.myPts.toString() ?? '',
+        score?.oppPts.toString() ?? '',
       ];
 }
 
