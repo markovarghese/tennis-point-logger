@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tennis_logger/models/point.dart';
+import 'package:tennis_logger/models/score_state.dart';
 
 void main() {
   final dt = DateTime(2024, 6, 15, 9, 30, 45);
@@ -61,8 +62,8 @@ void main() {
   });
 
   group('toCsvRow', () {
-    test('produces exactly 9 columns', () {
-      expect(blank().toCsvRow('2024-06-15', 'Opp').length, 9);
+    test('produces exactly 15 columns', () {
+      expect(blank().toCsvRow('2024-06-15', 'Opp').length, 15);
     });
     test('first column is match date', () {
       expect(blank().toCsvRow('2024-06-15', 'Opp')[0], '2024-06-15');
@@ -87,6 +88,25 @@ void main() {
       expect(row[6], 'TRUE');   // serverWon
       expect(row[7], 'FALSE');  // forcedError
       expect(row[8], 'FALSE');  // loserForehand
+    });
+    test('score columns empty when score is null', () {
+      final row = blank().toCsvRow('2024-06-15', 'Opp');
+      for (final col in [9, 10, 11, 12, 13, 14]) {
+        expect(row[col], '');
+      }
+    });
+    test('score columns populated when score is set', () {
+      final p = TennisPoint(
+        id: 'x', createdAt: dt,
+        score: const ScoreState(mySets: 1, oppSets: 0, myGames: 3, oppGames: 2, myPts: 1, oppPts: 2),
+      );
+      final row = p.toCsvRow('2024-06-15', 'Opp');
+      expect(row[9], '1');   // mySets
+      expect(row[10], '0');  // oppSets
+      expect(row[11], '3');  // myGames
+      expect(row[12], '2');  // oppGames
+      expect(row[13], '1');  // myPts
+      expect(row[14], '2');  // oppPts
     });
   });
 }

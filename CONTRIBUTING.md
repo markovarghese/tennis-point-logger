@@ -5,11 +5,16 @@ Thank you for your interest in contributing! This document provides guidelines f
 ## 🚀 Development Workflow
 
 ### 1. Worktrees (Required for AI Agents)
-Always work in a git worktree to maintain an isolated environment.
+Always work in a git worktree to maintain an isolated environment. Use the setup script instead of `git worktree add` directly — it copies gitignored dev files that are required for local development.
+
 ```powershell
-# Create a worktree for your task
-git worktree add ../tennis-point-logger-<task-name> -b <feature-branch-name>
+# From the repo root:
+.\scripts\New-Worktree.ps1 -TaskName <task-name> -Branch <feature-branch-name>
 ```
+
+This copies `android/local.properties` and `android/app/google-services.json` into the new worktree automatically.
+
+> **Maintenance note:** If you add a new gitignored file that is required for local development, add a `Copy-Item` line for it in `scripts/New-Worktree.ps1` and update this section accordingly.
 
 ### 2. Branching Strategy
 - **Default Branch**: `main`

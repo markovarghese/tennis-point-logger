@@ -4,9 +4,12 @@ import 'package:tennis_logger/services/google_auth_service.dart';
 // Column indices in the Logger tab data rows (0-based, matching toCsvRow order).
 // A: matchDateTime, B: timeLabel, C: opponent,
 // D: myServe, E: firstServe, F: doubleFault, G: serverWon,
-// H: forcedError, I: loserForehand
+// H: forcedError, I: loserForehand,
+// J: mySets, K: oppSets, L: myGames, M: oppGames, N: myPts, O: oppPts
 const _colMyServe = 3;
 const _colServerWon = 6;
+const _colScoreStart = 9;
+const _colScoreEnd = 14;
 
 class SheetsVerifier {
   /// Returns the ID of the most recently modified sheet whose name starts with
@@ -28,12 +31,12 @@ class SheetsVerifier {
       String spreadsheetId, int rowNumber) async {
     final rows = await GoogleAuthService.instance.readSheetValues(
       spreadsheetId,
-      'Logger!A$rowNumber:I$rowNumber',
+      'Logger!A$rowNumber:O$rowNumber',
     );
     if (rows.isEmpty) return [];
-    // Pad to 9 columns so callers can index safely.
+    // Pad to 15 columns so callers can index safely.
     final row = rows.first;
-    while (row.length < 9) {
+    while (row.length < 15) {
       row.add('');
     }
     return row;
@@ -48,6 +51,19 @@ class SheetsVerifier {
     for (final col in [4, 5, 7, 8]) {
       expect(row[col], isNot(''),
           reason: 'stat field col $col in row $rowNumber must not be blank');
+    }
+  }
+
+  /// Asserts that score columns J–O (indices 9–14) in [rowNumber] are
+  /// non-empty and contain only digits.
+  static Future<void> assertScoreColumns(
+      String spreadsheetId, int rowNumber) async {
+    final row = await readLoggerRow(spreadsheetId, rowNumber);
+    for (var col = _colScoreStart; col <= _colScoreEnd; col++) {
+      expect(row[col], isNot(''),
+          reason: 'score column $col in row $rowNumber must not be blank');
+      expect(int.tryParse(row[col]), isNotNull,
+          reason: 'score column $col in row $rowNumber must be numeric');
     }
   }
 
