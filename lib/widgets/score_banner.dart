@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
-import '../services/score_engine.dart';
+import '../models/score_state.dart';
 import '../theme.dart';
 
+/// Top-of-entry score card. Two columns (Player / Opponent) separated by a
+/// centred "VS" divider. Each column shows the player's current point in a
+/// large monospaced numeral plus small S:x / G:y pill badges. Tapping the
+/// card opens the score-override sheet.
 class ScoreBanner extends StatelessWidget {
   final ScoreState score;
   final String opponentName;
@@ -14,90 +18,92 @@ class ScoreBanner extends StatelessWidget {
     this.onTap,
   });
 
+  String _pointFor(bool me) {
+    if (score.matchOver) {
+      final won = me
+          ? score.mySets >= score.setsToWin
+          : score.oppSets >= score.setsToWin;
+      return won ? 'W' : 'L';
+    }
+    final parts = score.ptScore.split('-');
+    if (parts.isEmpty) return '0';
+    if (parts.length == 1) return parts.first;
+    return me ? parts.first : parts.last;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: GlassPanel(
-          borderRadius: 12,
-          padding: const EdgeInsets.all(12),
-          opacity: 0.8,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Player 1 (Me)
-              _PlayerScore(
-                label: 'Player',
-                points: score.matchOver ? (score.mySets >= score.setsToWin ? 'WIN' : 'LOSS') : score.ptScore.split('-')[0],
-                sets: score.mySets,
-                games: score.myGames,
-                color: AppColors.primary,
-              ),
+    final theme = Theme.of(context);
 
-              // VS / Status
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (score.isDecidingPoint)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.error,
-                        borderRadius: BorderRadius.circular(4),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Material(
+        color: AppColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (score.isDecidingPoint)
+                  const _StatusPill(
+                    label: 'DECIDING POINT',
+                    background: AppColors.error,
+                    foreground: AppColors.onError,
+                  )
+                else if (score.isTiebreak)
+                  _StatusPill(
+                    label: score.inFinalTb ? 'MATCH TIEBREAK' : 'TIEBREAK',
+                    background: AppColors.surfaceContainerHigh,
+                    foreground: AppColors.onSurfaceVariant,
+                  )
+                else
+                  const SizedBox.shrink(),
+                if (score.isDecidingPoint || score.isTiebreak)
+                  const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _PlayerColumn(
+                        label: 'Player',
+                        point: _pointFor(true),
+                        sets: score.mySets,
+                        games: score.myGames,
+                        pointColor: AppColors.primary,
+                        setBadgeColor: AppColors.primaryContainer,
+                        setBadgeFg: AppColors.onPrimaryContainer,
+                        alignEnd: false,
                       ),
-                      child: const Text(
-                        'DECIDING POINT',
-                        style: TextStyle(
-                          fontSize: 8,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          letterSpacing: 0.5,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        'VS',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          color: AppColors.outlineVariant,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                    )
-                  else if (score.isTiebreak)
-                    Text(
-                      score.inFinalTb ? 'MATCH TIEBREAK' : 'TIEBREAK',
-                      style: const TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.outline,
-                        letterSpacing: 1,
+                    ),
+                    Expanded(
+                      child: _PlayerColumn(
+                        label: opponentName.isEmpty ? 'Opponent' : opponentName,
+                        point: _pointFor(false),
+                        sets: score.oppSets,
+                        games: score.oppGames,
+                        pointColor: AppColors.secondary,
+                        setBadgeColor: AppColors.secondaryContainer,
+                        setBadgeFg: AppColors.onSecondaryContainer,
+                        alignEnd: true,
                       ),
                     ),
-                  Text(
-                    'VS',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.outlineVariant.withValues(alpha: 0.5),
-                    ),
-                  ),
-                  if (onTap != null)
-                    const Text(
-                      'EDIT',
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.outline,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                ],
-              ),
-
-              // Player 2 (Opponent)
-              _PlayerScore(
-                label: opponentName.isEmpty ? 'Opponent' : opponentName,
-                points: score.matchOver ? (score.oppSets >= score.setsToWin ? 'WIN' : 'LOSS') : score.ptScore.split('-')[1],
-                sets: score.oppSets,
-                games: score.oppGames,
-                color: AppColors.secondaryContainer,
-                isRight: true,
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -105,88 +111,133 @@ class ScoreBanner extends StatelessWidget {
   }
 }
 
-class _PlayerScore extends StatelessWidget {
+class _StatusPill extends StatelessWidget {
   final String label;
-  final String points;
-  final int sets;
-  final int games;
-  final Color color;
-  final bool isRight;
-
-  const _PlayerScore({
+  final Color background;
+  final Color foreground;
+  const _StatusPill({
     required this.label,
-    required this.points,
-    required this.sets,
-    required this.games,
-    required this.color,
-    this.isRight = false,
+    required this.background,
+    required this.foreground,
   });
 
   @override
   Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: foreground,
+          letterSpacing: 1,
+        ),
+      ),
+    );
+  }
+}
+
+class _PlayerColumn extends StatelessWidget {
+  final String label;
+  final String point;
+  final int sets;
+  final int games;
+  final Color pointColor;
+  final Color setBadgeColor;
+  final Color setBadgeFg;
+  final bool alignEnd;
+
+  const _PlayerColumn({
+    required this.label,
+    required this.point,
+    required this.sets,
+    required this.games,
+    required this.pointColor,
+    required this.setBadgeColor,
+    required this.setBadgeFg,
+    required this.alignEnd,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final align =
+        alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start;
+
+    final badges = [
+      _ScoreBadge(text: 'S:$sets', background: setBadgeColor, foreground: setBadgeFg),
+      const SizedBox(width: 4),
+      _ScoreBadge(
+        text: 'G:$games',
+        background: AppColors.surfaceContainerHigh,
+        foreground: AppColors.onSurfaceVariant,
+      ),
+    ];
+
     return Column(
-      crossAxisAlignment: isRight ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      crossAxisAlignment: align,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodyMedium?.copyWith(
             color: AppColors.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 4),
         Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: [
-            if (isRight) ...[
-              _SubScore(label: 'S', value: sets),
-              const SizedBox(width: 4),
-              _SubScore(label: 'G', value: games),
-              const SizedBox(width: 12),
-            ],
-            Text(
-              points,
-              style: scoreTextStyle.copyWith(
-                fontSize: 36,
-                color: color,
-              ),
-            ),
-            if (!isRight) ...[
-              const SizedBox(width: 12),
-              _SubScore(label: 'S', value: sets),
-              const SizedBox(width: 4),
-              _SubScore(label: 'G', value: games),
-            ],
-          ],
+          mainAxisAlignment: alignEnd ? MainAxisAlignment.end : MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: alignEnd
+              ? [
+                  ...badges,
+                  const SizedBox(width: 8),
+                  Text(point, style: scoreDisplayStyle(size: 40, color: pointColor)),
+                ]
+              : [
+                  Text(point, style: scoreDisplayStyle(size: 40, color: pointColor)),
+                  const SizedBox(width: 8),
+                  ...badges,
+                ],
         ),
       ],
     );
   }
 }
 
-class _SubScore extends StatelessWidget {
-  final String label;
-  final int value;
+class _ScoreBadge extends StatelessWidget {
+  final String text;
+  final Color background;
+  final Color foreground;
 
-  const _SubScore({required this.label, required this.value});
+  const _ScoreBadge({
+    required this.text,
+    required this.background,
+    required this.foreground,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: AppColors.outlineVariant.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(4),
+        color: background,
+        borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
-        '$label:$value',
-        style: const TextStyle(
+        text,
+        style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w600,
-          color: AppColors.onSurfaceVariant,
+          color: foreground,
+          letterSpacing: 0.3,
         ),
       ),
     );

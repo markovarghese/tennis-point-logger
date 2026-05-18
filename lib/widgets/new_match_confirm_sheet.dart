@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../theme.dart';
+import 'sheet_header.dart';
 
 Future<bool?> showNewMatchConfirmSheet(
   BuildContext context, {
@@ -11,10 +10,9 @@ Future<bool?> showNewMatchConfirmSheet(
 }) {
   return showModalBottomSheet<bool>(
     context: context,
-    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
     builder: (_) => _NewMatchConfirmSheet(
       opponentName: opponentName,
-      matchDate: matchDate,
       pointCount: pointCount,
     ),
   );
@@ -22,104 +20,168 @@ Future<bool?> showNewMatchConfirmSheet(
 
 class _NewMatchConfirmSheet extends StatelessWidget {
   final String opponentName;
-  final DateTime matchDate;
   final int pointCount;
 
   const _NewMatchConfirmSheet({
     required this.opponentName,
-    required this.matchDate,
     required this.pointCount,
   });
 
   @override
   Widget build(BuildContext context) {
-    final dateStr = DateFormat('d MMM yyyy').format(matchDate);
+    final theme = Theme.of(context);
+    final media = MediaQuery.of(context);
+    final opp = opponentName.isEmpty ? 'Unknown' : opponentName;
 
-    return GlassPanel(
-      borderRadius: 28,
-      opacity: 0.8,
+    return Padding(
       padding: EdgeInsets.only(
-        top: 12,
-        left: 20,
-        right: 20,
-        bottom: MediaQuery.of(context).padding.bottom + 24,
+        bottom: media.padding.bottom + media.viewInsets.bottom,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          const SheetHeader(),
+          const SizedBox(height: 8),
           Container(
-            width: 40, height: 4,
+            width: 56,
+            height: 56,
             decoration: BoxDecoration(
-              color: AppColors.outlineVariant,
-              borderRadius: BorderRadius.circular(2),
+              color: AppColors.errorContainer,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(
+              Icons.warning_amber_rounded,
+              color: AppColors.error,
+              size: 28,
             ),
           ),
-          const SizedBox(height: 32),
-          const Icon(Icons.warning_amber_rounded, size: 48, color: AppColors.error),
           const SizedBox(height: 16),
           Text(
-            'DISCARD MATCH?',
-            style: GoogleFonts.hankenGrotesk(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: AppColors.primary,
-              letterSpacing: 1,
+            'Discard active match?',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'Going back to Setup will discard the current match data.',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: AppColors.onSurfaceVariant),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(32, 8, 32, 0),
+            child: Text(
+              'This action cannot be undone. All recorded points and '
+              'statistics for this match will be permanently lost.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
+            ),
           ),
           const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.outlineVariant.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.sports_tennis, color: AppColors.primary),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        opponentName.isEmpty ? 'Unknown Opponent' : opponentName,
-                        style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.onSurface),
-                      ),
-                      Text(
-                        '$dateStr · $pointCount points',
-                        style: const TextStyle(fontSize: 12, color: AppColors.onSurfaceVariant),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 32),
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.error,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: const Text('DISCARD & START NEW', style: TextStyle(fontWeight: FontWeight.w700)),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 4,
+              ),
+              child: Column(
+                children: [
+                  _SummaryRow(
+                    label: 'Opponent',
+                    valueWidget: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.account_circle_outlined,
+                          size: 18,
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          opp,
+                          style: theme.textTheme.titleMedium,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Divider(
+                    height: 1,
+                    color: AppColors.outlineVariant.withValues(alpha: 0.3),
+                  ),
+                  _SummaryRow(
+                    label: 'Points Recorded',
+                    valueWidget: Text(
+                      '$pointCount',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 12),
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('CANCEL', style: TextStyle(color: AppColors.onSurfaceVariant, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 24),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.error,
+                  foregroundColor: AppColors.onError,
+                  minimumSize: const Size(0, 56),
+                ),
+                child: const Text(
+                  'Discard & Start New Match',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+              ),
+            ),
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+            child: TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(
+                'Cancel',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SummaryRow extends StatelessWidget {
+  final String label;
+  final Widget valueWidget;
+
+  const _SummaryRow({required this.label, required this.valueWidget});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
+            ),
+          ),
+          valueWidget,
         ],
       ),
     );

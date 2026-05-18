@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../services/score_engine.dart';
+import '../models/score_state.dart';
 import '../models/match_settings.dart';
 import '../theme.dart';
+import 'sheet_header.dart';
 
 class ScoreOverride {
-  final int mySets, oppSets, myGames, oppGames;
+  final int mySets, oppSets, myGames, oppGames, myPts, oppPts;
   const ScoreOverride({
-    required this.mySets, required this.oppSets,
-    required this.myGames, required this.oppGames,
+    required this.mySets,
+    required this.oppSets,
+    required this.myGames,
+    required this.oppGames,
+    this.myPts = 0,
+    this.oppPts = 0,
   });
 }
 
@@ -20,7 +24,6 @@ Future<ScoreOverride?> showScoreOverrideSheet(
   return showModalBottomSheet<ScoreOverride>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.transparent,
     builder: (_) => _ScoreOverrideSheet(fmt: fmt, current: current),
   );
 }
@@ -35,7 +38,7 @@ class _ScoreOverrideSheet extends StatefulWidget {
 }
 
 class _ScoreOverrideSheetState extends State<_ScoreOverrideSheet> {
-  late int mySets, oppSets, myGames, oppGames;
+  late int mySets, oppSets, myGames, oppGames, myPts, oppPts;
 
   @override
   void initState() {
@@ -44,88 +47,95 @@ class _ScoreOverrideSheetState extends State<_ScoreOverrideSheet> {
     oppSets = widget.current.oppSets;
     myGames = widget.current.myGames;
     oppGames = widget.current.oppGames;
+    myPts = widget.current.myPts;
+    oppPts = widget.current.oppPts;
   }
 
   @override
   Widget build(BuildContext context) {
-    return GlassPanel(
-      borderRadius: 28,
-      opacity: 0.9,
-      color: AppColors.primary,
+    final media = MediaQuery.of(context);
+    return Padding(
       padding: EdgeInsets.only(
-        top: 12,
-        left: 20,
-        right: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        bottom: media.viewInsets.bottom + media.padding.bottom,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 40, height: 4,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(2),
+          const SheetHeader(
+            title: 'Score Override',
+            showCloseButton: true,
+          ),
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Column(
+                children: [
+                  _StepperRow(
+                    label: 'My Sets',
+                    value: mySets,
+                    onChanged: (v) => setState(() => mySets = v.clamp(0, 5)),
+                  ),
+                  const SizedBox(height: 8),
+                  _StepperRow(
+                    label: 'Opponent Sets',
+                    value: oppSets,
+                    onChanged: (v) => setState(() => oppSets = v.clamp(0, 5)),
+                  ),
+                  const SizedBox(height: 8),
+                  _StepperRow(
+                    label: 'My Games',
+                    value: myGames,
+                    onChanged: (v) => setState(() => myGames = v.clamp(0, 12)),
+                  ),
+                  const SizedBox(height: 8),
+                  _StepperRow(
+                    label: 'Opponent Games',
+                    value: oppGames,
+                    onChanged: (v) => setState(() => oppGames = v.clamp(0, 12)),
+                  ),
+                  const SizedBox(height: 8),
+                  _StepperRow(
+                    label: 'My Points',
+                    value: myPts,
+                    onChanged: (v) => setState(() => myPts = v.clamp(0, 30)),
+                  ),
+                  const SizedBox(height: 8),
+                  _StepperRow(
+                    label: 'Opponent Points',
+                    value: oppPts,
+                    onChanged: (v) => setState(() => oppPts = v.clamp(0, 30)),
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 24),
-          Text(
-            'SCORE OVERRIDE',
-            style: GoogleFonts.hankenGrotesk(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              letterSpacing: 1,
-            ),
-          ),
-          const SizedBox(height: 32),
-          _StepperRow(
-            label: 'MY SETS',
-            value: mySets,
-            onChanged: (v) => setState(() => mySets = v.clamp(0, 5)),
-          ),
-          const SizedBox(height: 16),
-          _StepperRow(
-            label: 'OPP SETS',
-            value: oppSets,
-            onChanged: (v) => setState(() => oppSets = v.clamp(0, 5)),
-          ),
-          const Divider(height: 32, color: Colors.white24),
-          _StepperRow(
-            label: 'MY GAMES',
-            value: myGames,
-            onChanged: (v) => setState(() => myGames = v.clamp(0, 12)),
-          ),
-          const SizedBox(height: 16),
-          _StepperRow(
-            label: 'OPP GAMES',
-            value: oppGames,
-            onChanged: (v) => setState(() => oppGames = v.clamp(0, 12)),
-          ),
-          const SizedBox(height: 40),
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: FilledButton(
-              onPressed: () => Navigator.pop(
-                context,
-                ScoreOverride(
-                  mySets: mySets, oppSets: oppSets,
-                  myGames: myGames, oppGames: oppGames,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+            child: SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () => Navigator.pop(
+                  context,
+                  ScoreOverride(
+                    mySets: mySets,
+                    oppSets: oppSets,
+                    myGames: myGames,
+                    oppGames: oppGames,
+                    myPts: myPts,
+                    oppPts: oppPts,
+                  ),
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.secondary,
+                  foregroundColor: AppColors.onSecondary,
+                  minimumSize: const Size(0, 56),
+                ),
+                child: const Text(
+                  'Apply Score Override',
+                  style: TextStyle(fontWeight: FontWeight.w500),
                 ),
               ),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.secondaryContainer,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-              ),
-              child: const Text('APPLY OVERRIDE', style: TextStyle(fontWeight: FontWeight.w700)),
             ),
-          ),
-          const SizedBox(height: 12),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('CANCEL', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -138,35 +148,75 @@ class _StepperRow extends StatelessWidget {
   final int value;
   final ValueChanged<int> onChanged;
 
-  const _StepperRow({required this.label, required this.value, required this.onChanged});
+  const _StepperRow({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 1),
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainer,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: theme.textTheme.titleMedium,
+            ),
           ),
-        ),
-        IconButton(
-          onPressed: () => onChanged(value - 1),
-          icon: const Icon(Icons.remove_circle_outline, color: Colors.white),
-        ),
-        Container(
-          width: 48,
-          alignment: Alignment.center,
-          child: Text(
-            '$value',
-            style: scoreTextStyle.copyWith(fontSize: 24, color: Colors.white),
+          _CircleIconButton(
+            icon: Icons.remove,
+            onTap: () => onChanged(value - 1),
           ),
+          SizedBox(
+            width: 48,
+            child: Center(
+              child: Text(
+                '$value',
+                style: scoreDisplayStyle(
+                  size: 22,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+          ),
+          _CircleIconButton(
+            icon: Icons.add,
+            onTap: () => onChanged(value + 1),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CircleIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _CircleIconButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.surfaceContainerHigh,
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: SizedBox(
+          width: 40,
+          height: 40,
+          child: Icon(icon, size: 22, color: AppColors.onSurface),
         ),
-        IconButton(
-          onPressed: () => onChanged(value + 1),
-          icon: const Icon(Icons.add_circle_outline, color: Colors.white),
-        ),
-      ],
+      ),
     );
   }
 }

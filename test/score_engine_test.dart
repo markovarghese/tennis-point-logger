@@ -321,4 +321,103 @@ void main() {
       expect(s.isTiebreak, false);
     });
   });
+
+  group('ptScoreLabel (extracted helper)', () {
+    test('regular no-ad — 0-0 → "0-0"', () {
+      final r = ptScoreLabel(
+        myPts: 0, oppPts: 0,
+        isTiebreak: false, scoringType: ScoringType.noAd,
+      );
+      expect(r.ptScore, '0-0');
+      expect(r.isDecidingPoint, false);
+    });
+
+    test('regular no-ad — 1-0 → "15-0"', () {
+      final r = ptScoreLabel(
+        myPts: 1, oppPts: 0,
+        isTiebreak: false, scoringType: ScoringType.noAd,
+      );
+      expect(r.ptScore, '15-0');
+    });
+
+    test('regular no-ad — 2-1 → "30-15"', () {
+      final r = ptScoreLabel(
+        myPts: 2, oppPts: 1,
+        isTiebreak: false, scoringType: ScoringType.noAd,
+      );
+      expect(r.ptScore, '30-15');
+    });
+
+    test('regular no-ad — 3-2 → "40-30"', () {
+      final r = ptScoreLabel(
+        myPts: 3, oppPts: 2,
+        isTiebreak: false, scoringType: ScoringType.noAd,
+      );
+      expect(r.ptScore, '40-30');
+    });
+
+    test('no-ad deciding point at 3-3', () {
+      final r = ptScoreLabel(
+        myPts: 3, oppPts: 3,
+        isTiebreak: false, scoringType: ScoringType.noAd,
+      );
+      expect(r.ptScore, 'Deciding Pt');
+      expect(r.isDecidingPoint, true);
+    });
+
+    test('ad scoring — 3-3 → Deuce', () {
+      final r = ptScoreLabel(
+        myPts: 3, oppPts: 3,
+        isTiebreak: false, scoringType: ScoringType.ad,
+      );
+      expect(r.ptScore, 'Deuce');
+      expect(r.isDecidingPoint, false);
+    });
+
+    test('ad scoring — 4-3 → Adv Me', () {
+      final r = ptScoreLabel(
+        myPts: 4, oppPts: 3,
+        isTiebreak: false, scoringType: ScoringType.ad,
+      );
+      expect(r.ptScore, 'Adv Me');
+    });
+
+    test('ad scoring — 3-4 → Adv Opp', () {
+      final r = ptScoreLabel(
+        myPts: 3, oppPts: 4,
+        isTiebreak: false, scoringType: ScoringType.ad,
+      );
+      expect(r.ptScore, 'Adv Opp');
+    });
+
+    test('ad scoring — 4-4 → Deuce again', () {
+      final r = ptScoreLabel(
+        myPts: 4, oppPts: 4,
+        isTiebreak: false, scoringType: ScoringType.ad,
+      );
+      expect(r.ptScore, 'Deuce');
+    });
+
+    test('tiebreak — 5-3 renders numerically regardless of scoringType', () {
+      final r1 = ptScoreLabel(
+        myPts: 5, oppPts: 3,
+        isTiebreak: true, scoringType: ScoringType.noAd,
+      );
+      final r2 = ptScoreLabel(
+        myPts: 5, oppPts: 3,
+        isTiebreak: true, scoringType: ScoringType.ad,
+      );
+      expect(r1.ptScore, '5-3');
+      expect(r2.ptScore, '5-3');
+      expect(r1.isDecidingPoint, false);
+    });
+
+    test('tiebreak — 0-0 renders as "0-0", not as tennis labels', () {
+      final r = ptScoreLabel(
+        myPts: 0, oppPts: 0,
+        isTiebreak: true, scoringType: ScoringType.noAd,
+      );
+      expect(r.ptScore, '0-0');
+    });
+  });
 }
