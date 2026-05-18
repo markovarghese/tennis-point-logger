@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
 
+/// Binary Y/N chip pair with an eyebrow label above. The "Tri" name is kept
+/// for backwards compatibility; the spec defines only two visible states
+/// (true and false). A null underlying value renders both chips inactive.
 class TriChip extends StatelessWidget {
   final bool? value;
   final String label;
@@ -16,42 +19,40 @@ class TriChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final baseKey = key is ValueKey ? (key as ValueKey).value.toString() : null;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 4),
+          padding: const EdgeInsets.only(left: 4, bottom: 6),
           child: Text(
             label.toUpperCase(),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: AppColors.onSurfaceVariant,
-              letterSpacing: 1,
-            ),
+            style: eyebrowStyle(),
           ),
         ),
         Row(
           children: [
-            _ChipButton(
-              key: baseKey != null ? Key('${baseKey}_Y') : null,
-              label: 'Y',
-              icon: Icons.check,
-              active: value == true,
-              activeColor: AppColors.primary,
-              onTap: () => onChange(true),
+            Expanded(
+              child: _ChipButton(
+                key: baseKey != null ? Key('${baseKey}_Y') : null,
+                label: 'Y',
+                icon: Icons.check,
+                state: value == true ? _ChipState.activeYes : _ChipState.inactive,
+                onTap: () => onChange(true),
+              ),
             ),
             const SizedBox(width: 8),
-            _ChipButton(
-              key: baseKey != null ? Key('${baseKey}_N') : null,
-              label: 'N',
-              icon: Icons.close,
-              active: value == false,
-              activeColor: AppColors.secondaryContainer,
-              onTap: () => onChange(false),
+            Expanded(
+              child: _ChipButton(
+                key: baseKey != null ? Key('${baseKey}_N') : null,
+                label: 'N',
+                icon: Icons.close,
+                state: value == false ? _ChipState.activeNo : _ChipState.inactive,
+                onTap: () => onChange(false),
+              ),
             ),
           ],
         ),
@@ -60,62 +61,55 @@ class TriChip extends StatelessWidget {
   }
 }
 
+enum _ChipState { inactive, activeYes, activeNo }
+
 class _ChipButton extends StatelessWidget {
   final String label;
   final IconData icon;
-  final bool active;
-  final Color activeColor;
+  final _ChipState state;
   final VoidCallback onTap;
 
   const _ChipButton({
     super.key,
     required this.label,
     required this.icon,
-    required this.active,
-    required this.activeColor,
+    required this.state,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
+    final bg = switch (state) {
+      _ChipState.activeYes => AppColors.primary,
+      _ChipState.activeNo => AppColors.secondary,
+      _ChipState.inactive => AppColors.surfaceContainerHighest,
+    };
+    final fg = switch (state) {
+      _ChipState.inactive => AppColors.onSurfaceVariant,
+      _ => Colors.white,
+    };
+
+    return Material(
+      color: bg,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
         onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
+        borderRadius: BorderRadius.circular(12),
+        child: SizedBox(
           height: 48,
-          decoration: BoxDecoration(
-            color: active ? activeColor : const Color(0xFFEDEEED), // surface-container
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: active
-                ? [
-                    BoxShadow(
-                      color: activeColor.withValues(alpha: 0.2),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    )
-                  ]
-                : null,
-          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                icon,
-                size: 16,
-                color: active ? Colors.white : AppColors.onSurface,
-              ),
-              if (label.isNotEmpty) ...[
-                const SizedBox(width: 4),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: active ? Colors.white : AppColors.onSurface,
-                  ),
+              Icon(icon, size: 20, color: fg),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: fg,
                 ),
-              ],
+              ),
             ],
           ),
         ),

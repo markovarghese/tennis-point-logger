@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../models/point.dart';
 import '../theme.dart';
+import '../widgets/tri_chip.dart';
 
 class HistoryScreen extends StatefulWidget {
   final List<TennisPoint> points;
@@ -23,359 +23,360 @@ class HistoryScreen extends StatefulWidget {
 
 class _HistoryScreenState extends State<HistoryScreen> {
   String? _editingId;
-  TennisPoint? _editPoint;
 
-  void _startEdit(TennisPoint p) {
-    setState(() {
-      _editingId = p.id;
-      _editPoint = p;
-    });
+  void _toggleEdit(TennisPoint p) {
+    setState(() => _editingId = _editingId == p.id ? null : p.id);
   }
 
-  void _stopEdit() => setState(() {
-    _editingId = null;
-    _editPoint = null;
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final reversed = widget.points.reversed.toList();
+    final bottomPad = MediaQuery.of(context).padding.bottom;
+
+    return Scaffold(
+      backgroundColor: AppColors.surface,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            _Header(
+              opponentName: widget.opponentName,
+              pointCount: widget.points.length,
+              onBack: widget.onBack,
+            ),
+            Expanded(
+              child: widget.points.isEmpty
+                  ? const _EmptyState()
+                  : Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          color: AppColors.surfaceContainerLow,
+                          child: Column(
+                            children: [
+                              const _ColumnHeaderRow(),
+                              const Divider(
+                                height: 1,
+                                color: AppColors.outlineVariant,
+                              ),
+                              Expanded(
+                                child: ListView.separated(
+                                  itemCount: reversed.length,
+                                  separatorBuilder: (_, __) => Divider(
+                                    height: 1,
+                                    color: AppColors.outlineVariant
+                                        .withValues(alpha: 0.3),
+                                  ),
+                                  itemBuilder: (context, i) {
+                                    final p = reversed[i];
+                                    final origIdx =
+                                        widget.points.length - 1 - i;
+                                    final pointNum = origIdx + 1;
+                                    return _PointRow(
+                                      point: p,
+                                      pointNum: pointNum,
+                                      isEditing: _editingId == p.id,
+                                      onTap: () => _toggleEdit(p),
+                                      onFieldChange: (key, val) {
+                                        widget.onEditPoint(
+                                          p.withField(key, val),
+                                        );
+                                      },
+                                      theme: theme,
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(20, 16, 20, 16 + bottomPad),
+              child: SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: FilledButton(
+                  onPressed: widget.onBack,
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.arrow_back, size: 20),
+                      SizedBox(width: 8),
+                      Text('Back to Entry'),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Header extends StatelessWidget {
+  final String opponentName;
+  final int pointCount;
+  final VoidCallback onBack;
+
+  const _Header({
+    required this.opponentName,
+    required this.pointCount,
+    required this.onBack,
   });
 
   @override
   Widget build(BuildContext context) {
-    final reversed = widget.points.reversed.toList();
     final theme = Theme.of(context);
-
-    return CourtBackground(
-      child: Column(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 4, 8, 8),
+      child: Row(
         children: [
-          // Header
-          SafeArea(
-            bottom: false,
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(4, 8, 16, 8),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back, color: AppColors.primary),
-                    onPressed: widget.onBack,
-                  ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'History',
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontFamily: GoogleFonts.hankenGrotesk().fontFamily,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primary,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        Text(
-                          '${widget.opponentName} · ${widget.points.length} points',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          IconButton(
+            onPressed: onBack,
+            icon: const Icon(Icons.arrow_back, color: AppColors.onSurface),
           ),
-
-          // Column headers
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.3))),
-            ),
-            child: const Row(
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(width: 32, child: _ColHeader('#')),
-                Expanded(child: _ColHeader('TIME')),
-                SizedBox(width: 24, child: _ColHeader('MS')),
-                SizedBox(width: 24, child: _ColHeader('1S')),
-                SizedBox(width: 24, child: _ColHeader('DF')),
-                SizedBox(width: 24, child: _ColHeader('SW')),
-                SizedBox(width: 24, child: _ColHeader('FE')),
-                SizedBox(width: 24, child: _ColHeader('LF')),
+                Text(
+                  'Point History',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  opponentName.isEmpty
+                      ? '$pointCount pts'
+                      : 'vs. $opponentName ($pointCount pts)',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                ),
               ],
             ),
           ),
+          const IconButton(
+            onPressed: null,
+            icon: Icon(
+              Icons.more_vert,
+              color: AppColors.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-          // Rows
-          Expanded(
-            child: widget.points.isEmpty
-                ? const Center(
-                    child: Text(
-                      'No points logged yet.',
-                      style: TextStyle(fontSize: 14, color: AppColors.onSurfaceVariant),
-                    ),
-                  )
-                : ListView.builder(
-                    itemCount: reversed.length,
-                    itemBuilder: (context, i) {
-                      final p = reversed[i];
-                      final origIdx = widget.points.length - i;
-                      final isEditing = _editingId == p.id;
-                      return Column(
-                        children: [
-                          GestureDetector(
-                            onTap: isEditing ? _stopEdit : () => _startEdit(p),
-                            child: Container(
-                              color: isEditing
-                                  ? AppColors.secondaryContainer.withValues(alpha: 0.1)
-                                  : i.isEven
-                                      ? Colors.transparent
-                                      : AppColors.primary.withValues(alpha: 0.02),
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              child: Row(
-                                children: [
-                                  SizedBox(
-                                    width: 32,
-                                    child: Text(
-                                      '$origIdx',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.primary,
-                                      ),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          p.timeLabel,
-                                          style: scoreTextStyle.copyWith(fontSize: 11, color: AppColors.onSurfaceVariant),
-                                        ),
-                                        if (p.score != null)
-                                          Text(
-                                            p.score!.compactLabel,
-                                            style: const TextStyle(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w700,
-                                              color: AppColors.primary,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                  ...kFields.map((f) => SizedBox(
-                                        width: 24,
-                                        child: _ChipMini(value: getField(p, f.key)),
-                                      )),
-                                ],
+class _ColumnHeaderRow extends StatelessWidget {
+  const _ColumnHeaderRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final labelStyle = theme.textTheme.labelMedium?.copyWith(
+      color: AppColors.onSurfaceVariant,
+      fontWeight: FontWeight.w500,
+    );
+
+    return Container(
+      color: AppColors.surfaceContainerHigh,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      child: Row(
+        children: [
+          SizedBox(width: 76, child: Text('# / Time', style: labelStyle)),
+          for (final f in kFields)
+            Expanded(
+              child: Text(
+                f.abbr,
+                textAlign: TextAlign.center,
+                style: labelStyle,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PointRow extends StatelessWidget {
+  final TennisPoint point;
+  final int pointNum;
+  final bool isEditing;
+  final VoidCallback onTap;
+  final void Function(String key, bool? val) onFieldChange;
+  final ThemeData theme;
+
+  const _PointRow({
+    required this.point,
+    required this.pointNum,
+    required this.isEditing,
+    required this.onTap,
+    required this.onFieldChange,
+    required this.theme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hh = point.createdAt.hour.toString().padLeft(2, '0');
+    final mm = point.createdAt.minute.toString().padLeft(2, '0');
+    final scoreLabel = point.score?.compactLabel ?? '';
+
+    return Material(
+      color: isEditing
+          ? AppColors.primaryContainer.withValues(alpha: 0.3)
+          : Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 76,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              '$pointNum',
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '$hh:$mm',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: AppColors.onSurface,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (scoreLabel.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              scoreLabel,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: AppColors.onSurfaceVariant,
                               ),
                             ),
                           ),
-                          if (isEditing && _editPoint != null)
-                            GlassPanel(
-                              borderRadius: 0,
-                              opacity: 0.9,
-                              color: AppColors.primary,
-                              padding: const EdgeInsets.all(20),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'EDITING POINT',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.white,
-                                      letterSpacing: 1,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  ...kFields.map((f) => Padding(
-                                        padding: const EdgeInsets.only(bottom: 16),
-                                        child: _InlineTriChip(
-                                          value: getField(_editPoint!, f.key),
-                                          label: f.label,
-                                          onChange: (v) {
-                                            final updated = _editPoint!.withField(f.key, v);
-                                            setState(() => _editPoint = updated);
-                                            widget.onEditPoint(updated);
-                                          },
-                                          triState: f.key == 'myServe' || f.key == 'serverWon',
-                                        ),
-                                      )),
-                                  const SizedBox(height: 8),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    height: 48,
-                                    child: FilledButton(
-                                      onPressed: _stopEdit,
-                                      style: FilledButton.styleFrom(
-                                        backgroundColor: Colors.white,
-                                        foregroundColor: AppColors.primary,
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                                      ),
-                                      child: const Text('DONE', style: TextStyle(fontWeight: FontWeight.w700)),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                        ],
-                      );
-                    },
+                      ],
+                    ),
                   ),
-          ),
-
-          // Bottom Bar
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              20,
-              12,
-              20,
-              20 + MediaQuery.of(context).padding.bottom,
-            ),
-            child: SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: OutlinedButton(
-                onPressed: widget.onBack,
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.primary, width: 2),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                  foregroundColor: AppColors.primary,
-                ),
-                child: const Text(
-                  'BACK TO ENTRY',
-                  style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 1),
-                ),
+                  for (final f in kFields)
+                    Expanded(
+                      child: Center(
+                        child: _StatusIcon(value: getField(point, f.key)),
+                      ),
+                    ),
+                ],
               ),
-            ),
+              if (isEditing) ...[
+                const SizedBox(height: 16),
+                _InlineEditor(
+                  point: point,
+                  onFieldChange: onFieldChange,
+                ),
+              ],
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
-class _ColHeader extends StatelessWidget {
-  final String text;
-  const _ColHeader(this.text);
+class _StatusIcon extends StatelessWidget {
+  final bool? value;
+  const _StatusIcon({required this.value});
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 10,
-        fontWeight: FontWeight.w800,
+    if (value == null) {
+      return const Icon(
+        Icons.radio_button_unchecked,
+        size: 22,
         color: AppColors.outline,
-        letterSpacing: 1,
-      ),
-      textAlign: TextAlign.center,
+      );
+    }
+    if (value == true) {
+      return const Icon(
+        Icons.check_circle_outline,
+        size: 22,
+        color: AppColors.primary,
+      );
+    }
+    return const Icon(
+      Icons.cancel_outlined,
+      size: 22,
+      color: AppColors.secondary,
     );
   }
 }
 
-class _ChipMini extends StatelessWidget {
-  final bool? value;
-  const _ChipMini({required this.value});
+class _InlineEditor extends StatelessWidget {
+  final TennisPoint point;
+  final void Function(String key, bool? val) onFieldChange;
+
+  const _InlineEditor({required this.point, required this.onFieldChange});
 
   @override
   Widget build(BuildContext context) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.only(top: 4),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        mainAxisExtent: 86,
+      ),
+      itemCount: kFields.length,
+      itemBuilder: (context, i) {
+        final f = kFields[i];
+        return TriChip(
+          key: Key('edit_${point.id}_${f.key}'),
+          value: getField(point, f.key),
+          label: f.label,
+          onChange: (v) => onFieldChange(f.key, v),
+        );
+      },
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Center(
-      child: Container(
-        width: 16,
-        height: 16,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: value == null
-              ? Colors.transparent
-              : value == true
-                  ? AppColors.primary
-                  : AppColors.secondaryContainer,
-          border: value == null ? Border.all(color: AppColors.outlineVariant, style: BorderStyle.solid) : null,
-        ),
-        child: value != null
-            ? Icon(
-                value == true ? Icons.check : Icons.close,
-                size: 10,
-                color: Colors.white,
-              )
-            : null,
-      ),
-    );
-  }
-}
-
-class _InlineTriChip extends StatelessWidget {
-  final bool? value;
-  final String label;
-  final ValueChanged<bool?> onChange;
-  final bool triState;
-
-  const _InlineTriChip({
-    required this.value,
-    required this.label,
-    required this.onChange,
-    required this.triState,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
-          ),
-        ),
-        _MiniBtn(label: 'Y', active: value == true, color: Colors.white, textColor: AppColors.primary, onTap: () => onChange(true)),
-        const SizedBox(width: 8),
-        _MiniBtn(label: 'N', active: value == false, color: Colors.white, textColor: AppColors.primary, onTap: () => onChange(false)),
-        if (triState) ...[
-          const SizedBox(width: 8),
-          _MiniBtn(label: '—', active: value == null, color: Colors.white, textColor: AppColors.primary, onTap: () => onChange(null)),
-        ],
-      ],
-    );
-  }
-}
-
-class _MiniBtn extends StatelessWidget {
-  final String label;
-  final bool active;
-  final Color color;
-  final Color textColor;
-  final VoidCallback onTap;
-
-  const _MiniBtn({
-    required this.label,
-    required this.active,
-    required this.color,
-    required this.textColor,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: active ? color : Colors.white.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          label,
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            color: active ? textColor : Colors.white,
-          ),
+      child: Text(
+        'No points logged yet.',
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: AppColors.onSurfaceVariant,
         ),
       ),
     );

@@ -21,20 +21,36 @@
 ## App screenshots
 
 <p align="center">
-  <img src="docs/screenshots/01_setup.png"   alt="Match setup"    width="22%" />
-  <img src="docs/screenshots/02_entry.png"   alt="Point entry"    width="22%" />
-  <img src="docs/screenshots/03_history.png" alt="Point history"  width="22%" />
-  <img src="docs/screenshots/04_settings.png" alt="Settings"      width="22%" />
+  <img src="docs/screenshots/01_setup.png"    alt="Match setup"   width="22%" />
+  <img src="docs/screenshots/02_entry.png"    alt="Point entry"   width="22%" />
+  <img src="docs/screenshots/05_history.png"  alt="Point history" width="22%" />
+  <img src="docs/screenshots/07_settings.png" alt="Settings"      width="22%" />
 </p>
 
 <p align="center"><em>Match setup · Point entry · History · Settings</em></p>
+
+<p align="center">
+  <img src="docs/screenshots/03_score_override.png" alt="Score override modal"  width="22%" />
+  <img src="docs/screenshots/04_export.png"         alt="Export modal"          width="22%" />
+  <img src="docs/screenshots/06_discard_match.png"  alt="Discard match modal"   width="22%" />
+  <img src="docs/screenshots/08_debug_log.png"      alt="Debug log modal"       width="22%" />
+</p>
+
+<p align="center"><em>Score override · Export · Discard match · Debug log</em></p>
+
+<p align="center">
+  <img src="docs/screenshots/09_folder_picker.png" alt="Drive folder picker"      width="22%" />
+  <img src="docs/screenshots/10_sheet_picker.png"  alt="Drive spreadsheet picker" width="22%" />
+</p>
+
+<p align="center"><em>Drive folder picker · Spreadsheet picker</em></p>
 
 ## From court to insights
 
 Log every point in seconds on your phone — then open the Google Sheet the app created and see your performance at a glance.
 
 <p align="center">
-  <img src="docs/screenshots/05_sheets_summary.png" alt="Google Sheets Summary tab" width="90%" />
+  <img src="docs/screenshots/11_sheets_summary.png" alt="Google Sheets Summary tab" width="90%" />
 </p>
 
 The **Summary tab** in every generated spreadsheet includes:

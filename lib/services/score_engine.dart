@@ -161,33 +161,12 @@ ScoreState nextScore(ScoreState prev, TennisPoint point, MatchFormat fmt) {
      }
   }
 
-  // Format point score
-  String ptScoreStr;
-  bool isDecidingPoint = false;
-  if (inFinalTb || inTiebreak) {
-    ptScoreStr = '$myPts-$oppPts';
-  } else {
-    if (fmt.scoringType == ScoringType.noAd) {
-      const labels = [0, 15, 30, 40];
-      if (myPts >= 3 && oppPts >= 3) {
-        ptScoreStr = 'Deciding Pt';
-        isDecidingPoint = true;
-      } else {
-        ptScoreStr = '${labels[myPts.clamp(0, 3)]}-${labels[oppPts.clamp(0, 3)]}';
-      }
-    } else {
-      if (myPts >= 3 && oppPts >= 3) {
-        if (myPts == oppPts) {
-          ptScoreStr = 'Deuce';
-        } else {
-          ptScoreStr = myPts > oppPts ? 'Adv Me' : 'Adv Opp';
-        }
-      } else {
-        const labels = [0, 15, 30, 40];
-        ptScoreStr = '${labels[myPts.clamp(0, 3)]}-${labels[oppPts.clamp(0, 3)]}';
-      }
-    }
-  }
+  final label = ptScoreLabel(
+    myPts: myPts,
+    oppPts: oppPts,
+    isTiebreak: inTiebreak || inFinalTb,
+    scoringType: fmt.scoringType,
+  );
 
   return ScoreState(
     mySets: mySets,
@@ -196,12 +175,12 @@ ScoreState nextScore(ScoreState prev, TennisPoint point, MatchFormat fmt) {
     oppGames: oppGames,
     myPts: myPts,
     oppPts: oppPts,
-    ptScore: ptScoreStr,
+    ptScore: label.ptScore,
     matchOver: mySets >= setsToWin || oppSets >= setsToWin,
     isTiebreak: inTiebreak || inFinalTb,
     inFinalTb: inFinalTb,
     setsToWin: setsToWin,
-    isDecidingPoint: isDecidingPoint,
+    isDecidingPoint: label.isDecidingPoint,
     serverStartsTiebreak: serverStartsTiebreak,
     setResults: setResults,
   );
@@ -213,4 +192,42 @@ ScoreState calcScore(List<TennisPoint> points, MatchFormat fmt) {
     state = nextScore(state, p, fmt);
   }
   return state;
+}
+
+/// Renders the raw `(myPts, oppPts)` point counters into the user-facing
+/// score label plus a flag indicating a no-ad deciding point. Tiebreaks
+/// (regular set and final/match) always show numerically.
+({String ptScore, bool isDecidingPoint}) ptScoreLabel({
+  required int myPts,
+  required int oppPts,
+  required bool isTiebreak,
+  required ScoringType scoringType,
+}) {
+  if (isTiebreak) {
+    return (ptScore: '$myPts-$oppPts', isDecidingPoint: false);
+  }
+  const labels = [0, 15, 30, 40];
+  if (scoringType == ScoringType.noAd) {
+    if (myPts >= 3 && oppPts >= 3) {
+      return (ptScore: 'Deciding Pt', isDecidingPoint: true);
+    }
+    return (
+      ptScore:
+          '${labels[myPts.clamp(0, 3)]}-${labels[oppPts.clamp(0, 3)]}',
+      isDecidingPoint: false,
+    );
+  }
+  if (myPts >= 3 && oppPts >= 3) {
+    if (myPts == oppPts) {
+      return (ptScore: 'Deuce', isDecidingPoint: false);
+    }
+    return (
+      ptScore: myPts > oppPts ? 'Adv Me' : 'Adv Opp',
+      isDecidingPoint: false,
+    );
+  }
+  return (
+    ptScore: '${labels[myPts.clamp(0, 3)]}-${labels[oppPts.clamp(0, 3)]}',
+    isDecidingPoint: false,
+  );
 }

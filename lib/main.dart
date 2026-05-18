@@ -266,14 +266,24 @@ class _AppShellState extends State<_AppShell> {
 
   ScoreState _applyOverride(ScoreOverride o) {
     final fmt = _settings.format;
-    final inFinalSet = (o.mySets + o.oppSets) == (fmt.matchFormatType == MatchFormatType.singleSet ? 0 : 2);
-    final atTb = o.myGames == fmt.setTiebreakAt && o.oppGames == fmt.setTiebreakAt;
-    final inFinalTb = atTb && inFinalSet && fmt.matchFormatType == MatchFormatType.bestOf3MatchTb;
-    final inTiebreak = atTb && !inFinalTb;
+    // Match TB starts whenever sets are 1-1 in bestOf3MatchTb format, with
+    // games kept at 0-0 by the engine throughout the TB.
+    final inFinalTb =
+        fmt.matchFormatType == MatchFormatType.bestOf3MatchTb &&
+            o.mySets == 1 &&
+            o.oppSets == 1 &&
+            o.myGames == 0 &&
+            o.oppGames == 0;
+    // Regular set TB starts when games equal the trigger threshold and we
+    // are not in a match TB.
+    final inSetTb = !inFinalTb &&
+        o.myGames == fmt.setTiebreakAt &&
+        o.oppGames == fmt.setTiebreakAt;
+    final inTiebreak = inFinalTb || inSetTb;
 
-    // Reconstruct setResults from override
+    // Reconstruct setResults from override (coarse — we don't know if sets
+    // were won via a tiebreak, so we synthesize a typical final score).
     final List<String> setResults = [];
-    // This is a simplification, we don't know if sets were won via TB
     for (int i = 0; i < o.mySets; i++) {
       setResults.add('${fmt.setWinThreshold}-${fmt.setWinThreshold - 2}');
     }
@@ -281,16 +291,24 @@ class _AppShellState extends State<_AppShell> {
       setResults.add('${fmt.setWinThreshold - 2}-${fmt.setWinThreshold}');
     }
 
+    final label = ptScoreLabel(
+      myPts: o.myPts,
+      oppPts: o.oppPts,
+      isTiebreak: inTiebreak,
+      scoringType: fmt.scoringType,
+    );
+
     return ScoreState(
       mySets: o.mySets,
       oppSets: o.oppSets,
       myGames: o.myGames,
       oppGames: o.oppGames,
-      myPts: 0,
-      oppPts: 0,
-      ptScore: '0-0',
-      isTiebreak: inTiebreak || inFinalTb,
+      myPts: o.myPts,
+      oppPts: o.oppPts,
+      ptScore: label.ptScore,
+      isTiebreak: inTiebreak,
       inFinalTb: inFinalTb,
+      isDecidingPoint: label.isDecidingPoint,
       matchOver: o.mySets >= fmt.setsToWin || o.oppSets >= fmt.setsToWin,
       setsToWin: _matchStartScore.setsToWin,
       setResults: setResults,
@@ -376,11 +394,6 @@ class _BottomNav extends StatelessWidget {
     return NavigationBar(
       selectedIndex: selected,
       onDestinationSelected: onChanged,
-      backgroundColor: AppColors.surface,
-      indicatorColor: AppColors.secondaryContainer,
-      elevation: 0,
-      shadowColor: Colors.transparent,
-      surfaceTintColor: Colors.transparent,
       destinations: const [
         NavigationDestination(
           icon: Icon(Icons.sports_tennis_outlined),
